@@ -4,7 +4,7 @@ import { query } from './db';
 const router = Router();
 
 interface IssueRow {
-    id: number;
+    id: string;
     type: string;
     lat: string;
     lng: string;
@@ -41,7 +41,7 @@ router.get('/map-state', async (req: Request, res: Response) => {
         i.magnitude,
         u.status,
         u.timestamp as updated_at,
-        COALESCE(json_agg(m.image_url) FILTER (WHERE m.image_url IS NOT NULL), '[]') as images
+        COALESCE(json_agg(distinct m.image_url) FILTER (WHERE m.image_url IS NOT NULL), '[]') as images
       FROM issues i
       JOIN LATERAL (
         SELECT * FROM issue_updates
@@ -55,7 +55,7 @@ router.get('/map-state', async (req: Request, res: Response) => {
         (i.type = 'water_logging' AND i.created_at >= $1 - interval '3 days') OR
         (i.type = 'garbage_dump')
       )
-      GROUP BY i.id, u.id, u.status, u.timestamp
+      GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp
     `;
 
         const result = await query(sql, [targetTime]);
@@ -71,9 +71,12 @@ router.get('/map-state', async (req: Request, res: Response) => {
             timestamp: targetTime.toISOString(),
             issues
         });
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
-        res.status(500).json({ error: 'Failed to fetch map state' });
+        res.status(500).json({
+            error: 'Failed to fetch map state',
+            details: err.message
+        });
     }
 });
 
