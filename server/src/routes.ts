@@ -1,10 +1,27 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { query } from './db';
 
 const router = Router();
 
+interface IssueRow {
+    id: number;
+    type: string;
+    lat: string;
+    lng: string;
+    reported_by: string;
+    createdAt: Date;
+    approved: boolean;
+    votes_true: number;
+    votes_false: number;
+    resolve_votes: number;
+    magnitude: number;
+    status: string;
+    updated_at: Date;
+    images: string[];
+}
+
 // GET /api/map-state?timestamp=XYZ
-router.get('/map-state', async (req, res) => {
+router.get('/map-state', async (req: Request, res: Response) => {
     const { timestamp } = req.query;
     const targetTime = timestamp ? new Date(timestamp as string) : new Date();
 
@@ -44,7 +61,7 @@ router.get('/map-state', async (req, res) => {
         const result = await query(sql, [targetTime]);
 
         // Transform back to the frontend types (location: [lat, lng])
-        const issues = result.rows.map(row => ({
+        const issues = result.rows.map((row: IssueRow) => ({
             ...row,
             location: [parseFloat(row.lat), parseFloat(row.lng)],
             images: row.images
@@ -61,7 +78,7 @@ router.get('/map-state', async (req, res) => {
 });
 
 // POST /api/report
-router.post('/report', async (req, res) => {
+router.post('/report', async (req: Request, res: Response) => {
     const { type, location, reportedBy, status, note, imageUrl, magnitude } = req.body;
     const [lat, lng] = location;
 
@@ -101,7 +118,7 @@ router.post('/report', async (req, res) => {
 });
 
 // POST /api/issue/:id/vote
-router.post('/issue/:id/vote', async (req, res) => {
+router.post('/issue/:id/vote', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { vote } = req.body; // 'true' or 'false'
 
@@ -127,7 +144,7 @@ router.post('/issue/:id/vote', async (req, res) => {
 });
 
 // POST /api/issue/:id/approve (Admin)
-router.post('/issue/:id/approve', async (req, res) => {
+router.post('/issue/:id/approve', async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         await query('UPDATE issues SET approved = TRUE WHERE id = $1', [id]);
@@ -139,7 +156,7 @@ router.post('/issue/:id/approve', async (req, res) => {
 });
 
 // POST /api/issue/:id/resolve (Admin)
-router.post('/issue/:id/resolve', async (req, res) => {
+router.post('/issue/:id/resolve', async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         // Create a new issue_update with resolved status
@@ -155,7 +172,7 @@ router.post('/issue/:id/resolve', async (req, res) => {
 });
 
 // POST /api/issue/:id/resolve-vote
-router.post('/issue/:id/resolve-vote', async (req, res) => {
+router.post('/issue/:id/resolve-vote', async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
