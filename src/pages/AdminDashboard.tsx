@@ -10,14 +10,14 @@ const AdminDashboard = () => {
     const [issues, setIssues] = useState<InfrastructureIssue[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>('pending');
-    const baseUrl = `http://${window.location.hostname}:3001`;
+    const baseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
 
     const fetchIssues = async () => {
         setIsLoading(true);
         try {
             const response = await fetch(`${baseUrl}/api/map-state?timestamp=${new Date().toISOString()}`);
             const data = await response.json();
-            setIssues(data.issues || []);
+            setIssues(Array.isArray(data.issues) ? data.issues : []);
         } catch (error) {
             console.error('Failed to fetch issues:', error);
         } finally {

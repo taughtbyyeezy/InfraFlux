@@ -125,14 +125,14 @@ const UserMap = () => {
         magnitude: 5
     });
 
-    const baseUrl = `http://${window.location.hostname}:3001`;
+    const baseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
 
     const fetchMapState = async (time: Date) => {
         setIsLoading(true);
         try {
             const response = await fetch(`${baseUrl}/api/map-state?timestamp=${time.toISOString()}`);
             const data = await response.json();
-            setIssues(data.issues);
+            setIssues(Array.isArray(data.issues) ? data.issues : []);
         } catch (error) {
             console.error('Failed to fetch map state:', error);
         } finally {
@@ -192,6 +192,7 @@ const UserMap = () => {
     };
 
     const filteredIssues = useMemo(() => {
+        if (!Array.isArray(issues)) return [];
         return issues.filter(issue => selectedTypes.includes(issue.type));
     }, [issues, selectedTypes]);
 

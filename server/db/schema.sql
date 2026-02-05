@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS issues (
     approved BOOLEAN DEFAULT FALSE,
     votes_true INTEGER DEFAULT 0,
     votes_false INTEGER DEFAULT 0,
-    votes_resolve INTEGER DEFAULT 0,
+    resolve_votes INTEGER DEFAULT 0,
     magnitude INTEGER DEFAULT 5
 );
 
