@@ -1,14 +1,24 @@
 -- Enable PostGIS extension
 CREATE EXTENSION IF NOT EXISTS postgis;
 
--- Issue Types Enum
-CREATE TYPE issue_type AS ENUM ('pothole', 'water_logging', 'garbage_dump');
+-- Issue Types Enum (Idempotent)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'issue_type') THEN
+        CREATE TYPE issue_type AS ENUM ('pothole', 'water_logging', 'garbage_dump');
+    END IF;
+END $$;
 
--- Issue Status Enum
-CREATE TYPE issue_status AS ENUM ('active', 'in_progress', 'resolved');
+-- Issue Status Enum (Idempotent)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'issue_status') THEN
+        CREATE TYPE issue_status AS ENUM ('active', 'in_progress', 'resolved');
+    END IF;
+END $$;
 
 -- Main Issues Table
-CREATE TABLE issues (
+CREATE TABLE IF NOT EXISTS issues (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type issue_type NOT NULL,
     geom GEOMETRY(Point, 4326) NOT NULL, -- WGS84 coordinates
@@ -17,11 +27,12 @@ CREATE TABLE issues (
     approved BOOLEAN DEFAULT FALSE,
     votes_true INTEGER DEFAULT 0,
     votes_false INTEGER DEFAULT 0,
+    votes_resolve INTEGER DEFAULT 0,
     magnitude INTEGER DEFAULT 5
 );
 
 -- Historical Updates Table
-CREATE TABLE issue_updates (
+CREATE TABLE IF NOT EXISTS issue_updates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     issue_id UUID REFERENCES issues(id) ON DELETE CASCADE,
     status issue_status NOT NULL,
@@ -30,7 +41,7 @@ CREATE TABLE issue_updates (
 );
 
 -- Media Table for Visual Proof
-CREATE TABLE media (
+CREATE TABLE IF NOT EXISTS media (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     update_id UUID REFERENCES issue_updates(id) ON DELETE CASCADE,
     image_url TEXT NOT NULL,
@@ -38,10 +49,9 @@ CREATE TABLE media (
 );
 
 -- Spatial Index
-CREATE INDEX issues_geom_idx ON issues USING GIST (geom);
+CREATE INDEX IF NOT EXISTS issues_geom_idx ON issues USING GIST (geom);
 
 -- Helper view for current state at a specific time
--- This is a conceptual view; the API will use a more complex query with a timestamp parameter.
 CREATE OR REPLACE VIEW current_issue_states AS
 SELECT DISTINCT ON (i.id)
     i.id,
