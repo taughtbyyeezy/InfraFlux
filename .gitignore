@@ -24,3 +24,6 @@ build/
 .agent/
 PROJECT_STRUCTURE.md
 SETUP_GUIDE.md
+
+# Local markers
+not-env
