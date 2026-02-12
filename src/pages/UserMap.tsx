@@ -297,10 +297,10 @@ const UserMap = () => {
                 body: JSON.stringify({
                     type: reportForm.type,
                     note: reportForm.note,
-                    imageUrl: reportForm.imageUrl,
                     location: reportForm.location,
                     reportedBy: getVoterId(),
-                    magnitude: reportForm.magnitude
+                    magnitude: reportForm.magnitude,
+                    ...(reportForm.imageUrl ? { imageUrl: reportForm.imageUrl } : {})
                 })
             });
             if (response.ok) {
@@ -308,9 +308,13 @@ const UserMap = () => {
                 setIsMobileReportOpen(false);
                 setReportForm({ type: 'pothole', note: '', imageUrl: '', location: null, magnitude: 5 });
                 fetchMapState(new Date());
+            } else {
+                const data = await response.json().catch(() => ({}));
+                alert(`Failed to submit report: ${data.error || 'Server error'}`);
             }
         } catch (error) {
             console.error('Failed to report issue:', error);
+            alert('A network error occurred while submitting the report.');
         }
     };
 
@@ -337,21 +341,27 @@ const UserMap = () => {
                     voterId: getVoterId()
                 })
             });
-            const data = await response.json();
-            if (data.delisted) {
-                setSelectedIssue(null);
-            }
-            fetchMapState(currentTime);
-            // Update selected issue with new vote counts
-            if (selectedIssue && selectedIssue.id === id) {
-                setSelectedIssue({
-                    ...selectedIssue,
-                    votes_true: data.votes_true,
-                    votes_false: data.votes_false
-                });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.delisted) {
+                    setSelectedIssue(null);
+                }
+                fetchMapState(currentTime);
+                // Update selected issue with new vote counts
+                if (selectedIssue && selectedIssue.id === id) {
+                    setSelectedIssue({
+                        ...selectedIssue,
+                        votes_true: data.votes_true,
+                        votes_false: data.votes_false
+                    });
+                }
+            } else {
+                const data = await response.json().catch(() => ({}));
+                alert(`Failed to record vote: ${data.error || 'Server error'}`);
             }
         } catch (error) {
             console.error('Failed to vote:', error);
+            alert('A network error occurred while voting.');
         }
     };
 
