@@ -29,7 +29,10 @@ const AdminDashboard = () => {
 
     const handleApprove = async (id: string) => {
         try {
-            await fetch(`${baseUrl}/api/issue/${id}/approve`, { method: 'POST' });
+            await fetch(`${baseUrl}/api/issue/${id}/approve`, {
+                method: 'POST',
+                headers: { 'x-admin-secret': import.meta.env.VITE_ADMIN_SECRET || '' }
+            });
             fetchIssues();
         } catch (error) {
             console.error('Failed to approve:', error);
@@ -38,7 +41,10 @@ const AdminDashboard = () => {
 
     const handleResolve = async (id: string) => {
         try {
-            await fetch(`${baseUrl}/api/issue/${id}/resolve`, { method: 'POST' });
+            await fetch(`${baseUrl}/api/issue/${id}/resolve`, {
+                method: 'POST',
+                headers: { 'x-admin-secret': import.meta.env.VITE_ADMIN_SECRET || '' }
+            });
             fetchIssues();
         } catch (error) {
             console.error('Failed to resolve:', error);
