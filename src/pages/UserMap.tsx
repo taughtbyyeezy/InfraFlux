@@ -7,7 +7,7 @@ import {
     ThumbsUp, ThumbsDown, Check, CheckCircle, Search, Navigation,
     Layers, ChevronRight, Map as MapIcon, Calendar,
     Trash2, Info, Camera, Trash, AlertTriangle,
-    Clock, CheckCircle2, Maximize2
+    Clock, CheckCircle2, Maximize2, ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clusterIssues } from '../utils/clustering';
@@ -233,7 +233,11 @@ const rewariBounds: [[number, number], [number, number]] = [
     [28.5, 76.9]
 ];
 
-const UserMap = () => {
+interface UserMapProps {
+    isAdmin?: boolean;
+}
+
+const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [issues, setIssues] = useState<InfrastructureIssue[]>([]);
     const [selectedIssue, setSelectedIssue] = useState<InfrastructureIssue | null>(null);
@@ -241,6 +245,15 @@ const UserMap = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [reportStep, setReportStep] = useState<'type' | 'location' | 'form' | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+        if (window.innerWidth > 767) {
+            const timer = setTimeout(() => {
+                setIsMenuOpen(true);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, []);
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['pothole', 'water_logging', 'garbage_dump']);
     const [map, setMap] = useState<L.Map | null>(null);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -320,7 +333,7 @@ const UserMap = () => {
 
     const handleResolveVote = async (id: string) => {
         try {
-            await fetch(`${baseUrl}/api/issue/${id}/resolve-vote`, {
+            const response = await fetch(`${baseUrl}/api/issue/${id}/resolve-vote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ voterId: getVoterId() })
@@ -365,7 +378,58 @@ const UserMap = () => {
         }
     };
 
-    const calculateConfidence = (votesTrue: number = 0, votesFalse: number = 0): number => {
+    const handleApprove = async (id: string) => {
+        try {
+            const adminSecret = import.meta.env.VITE_ADMIN_SECRET || 'admin';
+            const response = await fetch(`${baseUrl}/api/issue/${id}/approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-secret': adminSecret
+                },
+                body: JSON.stringify({ adminAction: 'approve' })
+            });
+            if (response.ok) {
+                fetchMapState(currentTime);
+                if (selectedIssue && selectedIssue.id === id) {
+                    setSelectedIssue({ ...selectedIssue, approved: true });
+                }
+            } else {
+                const error = await response.json().catch(() => ({}));
+                alert(`Approve failed: ${error.error || 'Server error'}`);
+            }
+        } catch (error) {
+            console.error('Failed to approve:', error);
+            alert(`Network error while approving: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
+
+    const handleRemove = async (id: string) => {
+        try {
+            const adminSecret = import.meta.env.VITE_ADMIN_SECRET || 'admin';
+            const response = await fetch(`${baseUrl}/api/issue/${id}/delist`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-secret': adminSecret
+                },
+                body: JSON.stringify({ adminAction: 'delist' })
+            });
+            if (response.ok) {
+                setSelectedIssue(null);
+                fetchMapState(currentTime);
+            } else {
+                const error = await response.json().catch(() => ({}));
+                alert(`Remove failed: ${error.error || 'Server error'} (Status: ${response.status})`);
+            }
+        } catch (error) {
+            console.error('Failed to remove:', error);
+            alert(`Network error while removing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
+
+    const calculateConfidence = (votesTrue: number = 0, votesFalse: number = 0, approved: boolean = false): number => {
+        if (approved) return 100;
         const totalVotes = votesTrue + votesFalse;
         if (totalVotes === 0) return 50; // Default 50% when no votes
 
@@ -421,7 +485,28 @@ const UserMap = () => {
     };
 
     return (
-        <div className="map-container">
+        <div className={`map-container ${isAdmin ? 'admin-mode' : ''}`}>
+            {isAdmin && (
+                <div style={{
+                    position: 'fixed',
+                    top: '12px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 10000,
+                    background: '#ef4444',
+                    color: 'white',
+                    padding: '4px 12px',
+                    borderRadius: '4px',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.1em',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                    pointerEvents: 'none',
+                    textTransform: 'uppercase'
+                }}>
+                    Admin Mode
+                </div>
+            )}
             {/* Left Sidebar Menu */}
             <div className={`side-menu ${isMenuOpen ? 'open' : ''}`}>
                 <div className="sidebar-header">
@@ -621,7 +706,7 @@ const UserMap = () => {
                                 {selectedIssue.type === 'water_logging' ? 'Water Logging' : selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' : selectedIssue.type === 'pothole' ? 'Pothole' : String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
                             </h2>
                             <div className="mobile-confidence-badge">
-                                {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false)}% <span className="confidence-text">Confidence</span>
+                                {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}% <span className="confidence-text">Confidence</span>
                             </div>
                         </div>
 
@@ -688,35 +773,90 @@ const UserMap = () => {
                                 <div className="menu-label">EVIDENCE</div>
                                 <div className="evidence-box">
                                     {selectedIssue.images.map((img, idx) => (
-                                        <img
-                                            key={idx}
-                                            src={img}
-                                            alt={`Evidence ${idx + 1}`}
-                                            className="mobile-evidence-img"
-                                        />
+                                        <div key={idx} style={{ position: 'relative', width: '100%' }}>
+                                            <img
+                                                src={img}
+                                                alt={`Evidence ${idx + 1}`}
+                                                className="mobile-evidence-img"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.style.display = 'none';
+                                                    if (target.nextSibling) {
+                                                        (target.nextSibling as HTMLElement).style.display = 'flex';
+                                                    }
+                                                }}
+                                            />
+                                            <div style={{
+                                                display: 'none',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '2rem',
+                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                border: '1px solid var(--glass-border)',
+                                                borderRadius: '12px',
+                                                color: 'var(--text-muted)',
+                                                fontSize: '0.8rem',
+                                                textAlign: 'center',
+                                                gap: '0.5rem'
+                                            }}>
+                                                <ExternalLink size={20} />
+                                                <div>Image failed to load</div>
+                                                <a href={img} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                                                    View on External Site
+                                                </a>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
                         <div className="mobile-detail-footer">
-                            <div className="vote-pill">
-                                <button
-                                    className="vote-pill-btn active-btn"
-                                    onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'true')}
-                                >
-                                    <XCircle size={18} />
-                                    <span>ACTIVE</span>
-                                </button>
-                                <div className="vote-pill-separator"></div>
-                                <button
-                                    className="vote-pill-btn fixed-btn"
-                                    onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'false')}
-                                >
-                                    <CheckCircle size={18} />
-                                    <span>FIXED IT</span>
-                                </button>
-                            </div>
+                            {isAdmin ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', minHeight: '48px', padding: '0 10px' }}>
+                                    <button
+                                        className="vote-pill-btn active-btn"
+                                        style={{
+                                            background: selectedIssue.approved ? '#6b7280' : '#10b981',
+                                            color: 'white',
+                                            cursor: selectedIssue.approved ? 'not-allowed' : 'pointer',
+                                            opacity: selectedIssue.approved ? 0.7 : 1
+                                        }}
+                                        onClick={() => selectedIssue.id && !selectedIssue.approved && handleApprove(selectedIssue.id)}
+                                        disabled={selectedIssue.approved}
+                                    >
+                                        <Check size={18} />
+                                        <span>{selectedIssue.approved ? 'APPROVED' : 'APPROVE'}</span>
+                                    </button>
+                                    <button
+                                        className="vote-pill-btn fixed-btn"
+                                        style={{ background: '#ef4444', color: 'white' }}
+                                        onClick={() => selectedIssue.id && handleRemove(selectedIssue.id)}
+                                    >
+                                        <Trash size={18} />
+                                        <span>REMOVE</span>
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="vote-pill">
+                                    <button
+                                        className="vote-pill-btn active-btn"
+                                        onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'true')}
+                                    >
+                                        <XCircle size={18} />
+                                        <span>ACTIVE</span>
+                                    </button>
+                                    <div className="vote-pill-separator"></div>
+                                    <button
+                                        className="vote-pill-btn fixed-btn"
+                                        onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'false')}
+                                    >
+                                        <CheckCircle size={18} />
+                                        <span>FIXED IT</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </MobileBottomPanel>
@@ -793,10 +933,34 @@ const UserMap = () => {
                         {/* Evidence */}
                         <div className="mobile-report-section">
                             <label className="mobile-report-label">Evidence</label>
-                            <div className="mobile-report-upload">
-                                <Camera size={24} />
-                                <span>Upload Photo</span>
-                            </div>
+                            <input
+                                type="text"
+                                className="mobile-report-evidence-url"
+                                placeholder="Paste image URL here..."
+                                value={reportForm.imageUrl}
+                                onChange={(e) => setReportForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                            />
+                            {reportForm.imageUrl && (
+                                <div className="evidence-preview-container">
+                                    <img
+                                        src={reportForm.imageUrl}
+                                        alt="Preview"
+                                        className="evidence-preview-img"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                        onLoad={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'block';
+                                        }}
+                                    />
+                                    <button
+                                        className="preview-remove-btn"
+                                        onClick={() => setReportForm(prev => ({ ...prev, imageUrl: '' }))}
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Submit Button */}
@@ -810,7 +974,8 @@ const UserMap = () => {
                         </button>
                     </div>
                 </MobileBottomPanel>
-            )}
+            )
+            }
 
             {/* Right Sidebar - Shows Issue Details or Report Form */}
             <div className={`detail-sidebar ${(!isMobile && (selectedIssue || reportStep)) ? 'open' : ''}`}>
@@ -900,16 +1065,43 @@ const UserMap = () => {
                                     <div className="menu-label">EVIDENCE</div>
                                     <div className="evidence-box">
                                         {selectedIssue.images.map((img, idx) => (
-                                            <img
-                                                key={idx}
-                                                src={img}
-                                                alt={`Evidence ${idx + 1}`}
-                                                style={{
-                                                    width: '100%',
-                                                    borderRadius: '8px',
-                                                    marginBottom: idx < selectedIssue.images!.length - 1 ? '0.5rem' : '0'
-                                                }}
-                                            />
+                                            <div key={idx} style={{ position: 'relative', width: '100%' }}>
+                                                <img
+                                                    key={idx}
+                                                    src={img}
+                                                    alt={`Evidence ${idx + 1}`}
+                                                    className="mobile-evidence-img"
+                                                    style={{ marginBottom: '0.5rem' }}
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                        if (target.nextSibling) {
+                                                            (target.nextSibling as HTMLElement).style.display = 'flex';
+                                                        }
+                                                    }}
+                                                />
+                                                <div style={{
+                                                    display: 'none',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    padding: '2rem',
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    border: '1px solid var(--border-light)',
+                                                    borderRadius: '12px',
+                                                    color: 'var(--text-muted)',
+                                                    fontSize: '0.9rem',
+                                                    textAlign: 'center',
+                                                    gap: '0.5rem',
+                                                    marginBottom: '0.5rem'
+                                                }}>
+                                                    <ExternalLink size={24} />
+                                                    <div>Evidence image failed to load</div>
+                                                    <a href={img} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                                                        Open Evidence Source
+                                                    </a>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -917,30 +1109,59 @@ const UserMap = () => {
                         </div>
 
                         <div className="sidebar-footer">
-                            <div className="vote-pill-container">
-                                <div className="vote-pill">
-                                    <button
-                                        className="vote-pill-btn active-btn"
-                                        onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'true')}
-                                    >
-                                        <XCircle size={18} />
-                                        <span>ACTIVE</span>
-                                    </button>
-                                    <div className="vote-pill-separator"></div>
-                                    <button
-                                        className="vote-pill-btn fixed-btn"
-                                        onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'false')}
-                                    >
-                                        <CheckCircle size={18} />
-                                        <span>FIXED</span>
-                                    </button>
+                            {isAdmin ? (
+                                <div className="vote-pill-container" style={{ width: '100%' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', minHeight: '48px', padding: '0 10px' }}>
+                                        <button
+                                            className="vote-pill-btn active-btn"
+                                            style={{
+                                                background: selectedIssue.approved ? '#6b7280' : '#10b981',
+                                                color: 'white',
+                                                cursor: selectedIssue.approved ? 'not-allowed' : 'pointer',
+                                                opacity: selectedIssue.approved ? 0.7 : 1
+                                            }}
+                                            onClick={() => selectedIssue.id && !selectedIssue.approved && handleApprove(selectedIssue.id)}
+                                            disabled={selectedIssue.approved}
+                                        >
+                                            <Check size={18} />
+                                            <span>{selectedIssue.approved ? 'APPROVED' : 'APPROVE'}</span>
+                                        </button>
+                                        <button
+                                            className="vote-pill-btn fixed-btn"
+                                            style={{ background: '#ef4444', color: 'white' }}
+                                            onClick={() => selectedIssue.id && handleRemove(selectedIssue.id)}
+                                        >
+                                            <Trash size={18} />
+                                            <span>REMOVE</span>
+                                        </button>
+                                    </div>
                                 </div>
+                            ) : (
+                                <div className="vote-pill-container">
+                                    <div className="vote-pill">
+                                        <button
+                                            className="vote-pill-btn active-btn"
+                                            onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'true')}
+                                        >
+                                            <XCircle size={18} />
+                                            <span>ACTIVE</span>
+                                        </button>
+                                        <div className="vote-pill-separator"></div>
+                                        <button
+                                            className="vote-pill-btn fixed-btn"
+                                            onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'false')}
+                                        >
+                                            <CheckCircle size={18} />
+                                            <span>FIXED</span>
+                                        </button>
+                                    </div>
 
-                                {/* Confidence Percentage */}
-                                <div className="desktop-confidence-display">
-                                    {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false)}%
+                                    {/* Confidence Percentage */}
+                                    <div className="desktop-confidence-display">
+                                        {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}%
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </>
                 )}
@@ -1053,7 +1274,17 @@ const UserMap = () => {
                                 <div className="menu-label">DESCRIPTION</div>
                                 <textarea
                                     className="note-bubble"
-                                    style={{ width: '100%', height: '100px', border: 'none', resize: 'none', padding: '1rem', fontStyle: 'normal' }}
+                                    style={{
+                                        width: '100%',
+                                        height: '100px',
+                                        border: '1px solid var(--border-light)',
+                                        resize: 'none',
+                                        padding: '1rem',
+                                        fontStyle: 'normal',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        borderRadius: '12px',
+                                        fontSize: '0.9rem'
+                                    }}
                                     placeholder="Describe the severity or specific details..."
                                     value={reportForm.note}
                                     onChange={e => setReportForm(prev => ({ ...prev, note: e.target.value }))}
@@ -1063,11 +1294,46 @@ const UserMap = () => {
                             {/* Evidence */}
                             <div className="menu-section">
                                 <div className="menu-label">EVIDENCE</div>
-                                <div className="upload-area">
-                                    <Camera size={32} color="var(--text-dim)" style={{ marginBottom: '0.5rem' }} />
-                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Upload Photo</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>JPEG or PNG up to 10MB</div>
-                                </div>
+                                <input
+                                    type="text"
+                                    className="note-bubble"
+                                    style={{
+                                        width: '100%',
+                                        height: '52px',
+                                        border: '1px solid var(--border-light)',
+                                        padding: '1rem',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        borderRadius: '12px',
+                                        color: 'white',
+                                        fontFamily: 'inherit',
+                                        fontSize: '0.9rem',
+                                        marginBottom: '0.5rem'
+                                    }}
+                                    placeholder="Paste image URL here..."
+                                    value={reportForm.imageUrl}
+                                    onChange={(e) => setReportForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                                />
+                                {reportForm.imageUrl && (
+                                    <div className="evidence-preview-container">
+                                        <img
+                                            src={reportForm.imageUrl}
+                                            alt="Preview"
+                                            className="evidence-preview-img"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                            onLoad={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'block';
+                                            }}
+                                        />
+                                        <button
+                                            className="preview-remove-btn"
+                                            onClick={() => setReportForm(prev => ({ ...prev, imageUrl: '' }))}
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1088,7 +1354,7 @@ const UserMap = () => {
                     </>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

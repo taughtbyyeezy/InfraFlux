@@ -11,7 +11,7 @@ const App = () => {
 
             <Routes>
                 <Route path="/" element={<UserMap />} />
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin" element={<UserMap isAdmin={true} />} />
             </Routes>
         </Router>
     );

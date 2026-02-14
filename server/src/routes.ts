@@ -202,8 +202,8 @@ router.post('/issue/:id/vote', async (req: Request, res: Response) => {
         let approved = result.rows[0].approved;
         let delisted = false;
 
-        // Auto-approve if votes_true >= 3
-        if (votesTrue >= 3 && !approved) {
+        // Auto-approve if votes_true >= 20
+        if (votesTrue >= 20 && !approved) {
             await query('UPDATE issues SET approved = TRUE WHERE id = $1', [id]);
             approved = true;
         }
@@ -238,19 +238,19 @@ router.post('/issue/:id/approve', adminAuth, async (req: Request, res: Response)
     }
 });
 
-// POST /api/issue/:id/resolve (Admin)
-router.post('/issue/:id/resolve', adminAuth, async (req: Request, res: Response) => {
+// POST /api/issue/:id/delist (Admin)
+router.post('/issue/:id/delist', adminAuth, async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         // Create a new issue_update with resolved status
         await query(
             'INSERT INTO issue_updates (issue_id, status, note) VALUES ($1, $2, $3)',
-            [id, 'resolved', 'Marked as resolved by admin']
+            [id, 'resolved', 'Marked as resolved (delisted) by admin']
         );
-        res.json({ message: 'Issue marked as resolved' });
+        res.json({ message: 'Issue delisted' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Failed to resolve issue' });
+        res.status(500).json({ error: 'Failed to delist issue' });
     }
 });
 

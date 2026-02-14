@@ -29,25 +29,47 @@ const AdminDashboard = () => {
 
     const handleApprove = async (id: string) => {
         try {
-            await fetch(`${baseUrl}/api/issue/${id}/approve`, {
+            const adminSecret = import.meta.env.VITE_ADMIN_SECRET || 'admin';
+            const response = await fetch(`${baseUrl}/api/issue/${id}/approve`, {
                 method: 'POST',
-                headers: { 'x-admin-secret': import.meta.env.VITE_ADMIN_SECRET || '' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-secret': adminSecret
+                },
+                body: JSON.stringify({ adminAction: 'approve' })
             });
-            fetchIssues();
+            if (response.ok) {
+                fetchIssues();
+            } else {
+                const error = await response.json().catch(() => ({}));
+                alert(`Approve failed: ${error.error || 'Server error'}`);
+            }
         } catch (error) {
             console.error('Failed to approve:', error);
+            alert(`Network error: ${error instanceof Error ? error.message : 'Failed to fetch'}`);
         }
     };
 
     const handleResolve = async (id: string) => {
         try {
-            await fetch(`${baseUrl}/api/issue/${id}/resolve`, {
+            const adminSecret = import.meta.env.VITE_ADMIN_SECRET || 'admin';
+            const response = await fetch(`${baseUrl}/api/issue/${id}/delist`, {
                 method: 'POST',
-                headers: { 'x-admin-secret': import.meta.env.VITE_ADMIN_SECRET || '' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-secret': adminSecret
+                },
+                body: JSON.stringify({ adminAction: 'delist' })
             });
-            fetchIssues();
+            if (response.ok) {
+                fetchIssues();
+            } else {
+                const error = await response.json().catch(() => ({}));
+                alert(`Resolve failed: ${error.error || 'Server error'}`);
+            }
         } catch (error) {
             console.error('Failed to resolve:', error);
+            alert(`Network error: ${error instanceof Error ? error.message : 'Failed to fetch'}`);
         }
     };
 
