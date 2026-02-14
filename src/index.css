@@ -1309,6 +1309,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.05em;
   padding: 0 1.25rem;
+  border-radius: var(--radius-standard);
   cursor: pointer;
   transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
