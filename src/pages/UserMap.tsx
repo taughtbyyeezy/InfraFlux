@@ -7,7 +7,7 @@ import {
     ThumbsUp, ThumbsDown, Check, CheckCircle, Search, Navigation,
     Layers, ChevronRight, Map as MapIcon, Calendar,
     Trash2, Info, Camera, Trash, AlertTriangle,
-    Clock, CheckCircle2, Maximize2, ExternalLink
+    Clock, CheckCircle2, Maximize2, ExternalLink, Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clusterIssues } from '../utils/clustering';
@@ -259,6 +259,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isMobileReportOpen, setIsMobileReportOpen] = useState(false);
     const [isMobileReportClosing, setIsMobileReportClosing] = useState(false);
+    const [adminPassword, setAdminPassword] = useState(sessionStorage.getItem('admin_password') || '');
+    const [loginPasswordInput, setLoginPasswordInput] = useState('');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
     const mobileReportPanelRef = useRef<HTMLDivElement>(null);
     const touchStartY = useRef<number>(0);
@@ -380,12 +382,12 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleApprove = async (id: string) => {
         try {
-            const adminSecret = import.meta.env.VITE_ADMIN_SECRET || 'admin';
+            const secretToUse = adminPassword || import.meta.env.VITE_ADMIN_SECRET || 'admin';
             const response = await fetch(`${baseUrl}/api/issue/${id}/approve`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-secret': adminSecret
+                    'x-admin-secret': secretToUse
                 },
                 body: JSON.stringify({ adminAction: 'approve' })
             });
@@ -406,12 +408,12 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleRemove = async (id: string) => {
         try {
-            const adminSecret = import.meta.env.VITE_ADMIN_SECRET || 'admin';
+            const secretToUse = adminPassword || import.meta.env.VITE_ADMIN_SECRET || 'admin';
             const response = await fetch(`${baseUrl}/api/issue/${id}/delist`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-secret': adminSecret
+                    'x-admin-secret': secretToUse
                 },
                 body: JSON.stringify({ adminAction: 'delist' })
             });
@@ -486,7 +488,87 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     return (
         <div className={`map-container ${isAdmin ? 'admin-mode' : ''}`}>
-            {isAdmin && (
+            {/* Admin Login Overlay */}
+            {isAdmin && !adminPassword && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    zIndex: 20000,
+                    background: 'rgba(0,0,0,0.85)',
+                    backdropFilter: 'blur(20px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        background: 'var(--glass-surface)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '24px',
+                        padding: '40px',
+                        width: '100%',
+                        maxWidth: '400px',
+                        textAlign: 'center',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                    }}>
+                        <Shield style={{ color: 'var(--accent)', marginBottom: '20px' }} size={48} />
+                        <h2 style={{ color: 'white', marginBottom: '10px', fontSize: '1.5rem' }}>Admin Access</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '30px', fontSize: '0.9rem' }}>
+                            Please enter the administrative password to manage infrastructure reports.
+                        </p>
+                        <input
+                            type="password"
+                            placeholder="Admin Password"
+                            value={loginPasswordInput}
+                            onChange={(e) => setLoginPasswordInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && loginPasswordInput) {
+                                    setAdminPassword(loginPasswordInput);
+                                    sessionStorage.setItem('admin_password', loginPasswordInput);
+                                }
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '15px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--glass-border)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                marginBottom: '20px',
+                                fontSize: '1rem',
+                                outline: 'none'
+                            }}
+                        />
+                        <button
+                            onClick={() => {
+                                if (loginPasswordInput) {
+                                    setAdminPassword(loginPasswordInput);
+                                    sessionStorage.setItem('admin_password', loginPasswordInput);
+                                }
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '15px',
+                                background: 'var(--accent)',
+                                color: 'black',
+                                border: 'none',
+                                borderRadius: '12px',
+                                fontWeight: '700',
+                                fontSize: '1rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Authorize Access
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {isAdmin && adminPassword && (
                 <div style={{
                     position: 'fixed',
                     top: '12px',
