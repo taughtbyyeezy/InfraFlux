@@ -46,6 +46,7 @@
   --filter-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 10px 0 40px rgba(0, 0, 0, 0.4);
   --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -10px 0 40px rgba(0, 0, 0, 0.4);
+  --glass-opaque: #ffffff;
   color-scheme: light;
 }
 
@@ -81,6 +82,7 @@
   --filter-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 20px 0 80px rgba(0, 0, 0, 0.4);
   --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -20px 0 80px rgba(0, 0, 0, 0.4);
+  --glass-opaque: #1a1a1a;
   color-scheme: dark;
 }
 
@@ -117,6 +119,7 @@
     --filter-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 20px 0 80px rgba(0, 0, 0, 0.4);
     --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -20px 0 80px rgba(0, 0, 0, 0.4);
+    --glass-opaque: #1a1a1a;
     color-scheme: dark;
   }
 }
@@ -239,21 +242,22 @@ body {
 .hamburger-btn {
   width: 44px;
   height: 44px;
-  background: rgba(255, 255, 255, 0.05);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
+  background: var(--glass-opaque);
   border: 1px solid var(--border-light);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  color: var(--text-primary);
 }
 
 .hamburger-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-opaque);
+  filter: brightness(0.95);
+  transform: translateY(-1px);
 }
 
 .logo-container {
@@ -455,7 +459,7 @@ body {
   right: 1.5rem;
   width: 36px;
   height: 36px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-opaque);
   border: 1px solid var(--border-light);
   border-radius: 10px;
   display: flex;
@@ -468,8 +472,9 @@ body {
 }
 
 .close-btn:hover {
-  background: var(--accent-glow);
-  color: var(--text-primary);
+  background: var(--accent);
+  color: #000;
+  transform: scale(1.05);
 }
 
 /* Detail Header */
