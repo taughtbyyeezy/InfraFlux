@@ -356,6 +356,28 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const handleGetCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setReportForm(prev => ({ ...prev, location: [latitude, longitude] }));
+                if (map) {
+                    map.setView([latitude, longitude], 18);
+                }
+            },
+            (error) => {
+                console.error('Geolocation error:', error);
+                alert(`Failed to get location: ${error.message}`);
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    };
+
     const handleReport = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!reportForm.location) return;
@@ -1071,12 +1093,21 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         {/* Location Coordinates */}
                         <div className="mobile-report-section">
                             <label className="mobile-report-label">Location</label>
-                            <div className="mobile-report-coordinates">
-                                {reportForm.location ? (
-                                    <span>{reportForm.location[0].toFixed(6)}, {reportForm.location[1].toFixed(6)}</span>
-                                ) : (
-                                    <span className="mobile-report-coordinates-placeholder">Tap on map to select location</span>
-                                )}
+                            <div className="mobile-location-wrapper">
+                                <div className="mobile-report-coordinates">
+                                    {reportForm.location ? (
+                                        <span>{reportForm.location[0].toFixed(6)}, {reportForm.location[1].toFixed(6)}</span>
+                                    ) : (
+                                        <span className="mobile-report-coordinates-placeholder">Tap Map or Use GPS</span>
+                                    )}
+                                </div>
+                                <button
+                                    className="mobile-gps-btn"
+                                    onClick={handleGetCurrentLocation}
+                                    title="Use Current Location"
+                                >
+                                    <Navigation size={20} />
+                                </button>
                             </div>
                         </div>
 

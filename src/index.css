@@ -1250,7 +1250,14 @@ body {
   border-color: var(--accent);
 }
 
+.mobile-location-wrapper {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
 .mobile-report-coordinates {
+  flex: 1;
   height: 48px;
   padding: 0 1rem;
   background: var(--glass-card);
@@ -1261,6 +1268,26 @@ body {
   color: var(--accent);
   font-family: monospace;
   font-size: 0.85rem;
+}
+
+.mobile-gps-btn {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+}
+
+.mobile-gps-btn:active {
+  transform: scale(0.95);
+  filter: brightness(0.9);
 }
 
 .mobile-report-coordinates-placeholder {
