@@ -1,10 +1,25 @@
 :root {
-  /* Default: Light Mode (for Mobile) */
+  /* Default Viewport-based Theme Logic handled below */
+  --header-height: 92px;
+  --item-height: 50px;
+  --radius-standard: 12px;
+  --z-sidebar: 4000;
+  --z-floating: 3500;
+  --z-modal: 5000;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Base Light Theme Tokens */
+:root,
+.light-theme {
   --primary: #000000;
   --primary-hover: #1a1a1a;
   --secondary: #f5f5f7;
   --accent: #007aff;
-  /* Apple Blue for Light Mode */
   --accent-hover: #0063cc;
   --accent-glow: rgba(0, 122, 255, 0.2);
   --bg-dark: #fbfbfd;
@@ -13,37 +28,40 @@
   --text-muted: #86868b;
   --text-dim: #aeaeb2;
   --border-light: rgba(0, 0, 0, 0.05);
-
-  /* Apple Glass UI Tokens - Light Mode optimized */
   --glass-blur: blur(30px);
   --glass-surface: rgba(255, 255, 255, 0.7);
   --glass-card: rgba(254, 254, 254, 0.85);
   --glass-border: rgba(0, 0, 0, 0.1);
   --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.7);
   --glass-refraction: rgba(0, 0, 0, 0.02);
-
-  /* Layout Tokens */
-  --header-height: 92px;
-  --item-height: 50px;
-  --radius-standard: 12px;
-
-  /* Z-Index Layers */
-  --z-sidebar: 4000;
-  --z-floating: 3500;
-  --z-modal: 5000;
-
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: light dark;
-  color: var(--text-primary);
-  background-color: var(--bg-dark);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  color-scheme: light;
 }
 
-/* Desktop Override: Dark Mode Default */
+/* Base Dark Theme Tokens */
+.dark-theme {
+  --primary: #ffffff;
+  --primary-hover: #e5e5e5;
+  --secondary: #1a1a1a;
+  --accent: #22d3ee;
+  --accent-hover: #06b6d4;
+  --accent-glow: rgba(34, 211, 238, 0.3);
+  --bg-dark: #0a0a0a;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #888;
+  --text-dim: #666;
+  --border-light: rgba(255, 255, 255, 0.08);
+  --glass-surface: rgba(255, 255, 255, 0.03);
+  --glass-card: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  --glass-refraction: rgba(255, 255, 255, 0.05);
+  color-scheme: dark;
+}
+
+/* Desktop Logic: Apply Dark Theme by default IF no manual class is set */
 @media (min-width: 768px) {
-  :root {
+  :root:not(.light-theme) {
     --primary: #ffffff;
     --primary-hover: #e5e5e5;
     --secondary: #1a1a1a;
@@ -56,15 +74,50 @@
     --text-muted: #888;
     --text-dim: #666;
     --border-light: rgba(255, 255, 255, 0.08);
-
-    /* Apple Glass UI Tokens - Dark Mode optimized */
     --glass-surface: rgba(255, 255, 255, 0.03);
     --glass-card: rgba(255, 255, 255, 0.04);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
     --glass-refraction: rgba(255, 255, 255, 0.05);
-
     color-scheme: dark;
+  }
+}
+
+.theme-toggle-desktop {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 5001;
+  width: 44px;
+  height: 44px;
+  background: var(--glass-card);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--glass-highlight), 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--accent);
+}
+
+.theme-toggle-desktop:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.theme-toggle-desktop:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 767px) {
+  .theme-toggle-desktop {
+    display: none !important;
   }
 }
 

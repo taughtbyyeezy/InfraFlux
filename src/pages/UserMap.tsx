@@ -7,7 +7,8 @@ import {
     ThumbsUp, ThumbsDown, Check, CheckCircle, Search, Navigation,
     Layers, ChevronRight, Map as MapIcon, Calendar,
     Trash2, Info, Camera, Trash, AlertTriangle,
-    Clock, CheckCircle2, Maximize2, ExternalLink, Shield
+    Clock, CheckCircle2, Maximize2, ExternalLink, Shield,
+    Sun, Moon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clusterIssues } from '../utils/clustering';
@@ -289,7 +290,24 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     }, []);
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['pothole', 'water_logging', 'garbage_dump']);
     const [map, setMap] = useState<L.Map | null>(null);
-    const [theme, setTheme] = useState<'light' | 'dark'>(window.innerWidth <= 767 ? 'light' : 'dark');
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+        const saved = localStorage.getItem('theme') as 'light' | 'dark';
+        if (saved) return saved;
+        return window.innerWidth <= 767 ? 'light' : 'dark';
+    });
+
+    useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'light') {
+            root.classList.add('light-theme');
+            root.classList.remove('dark-theme');
+        } else {
+            root.classList.add('dark-theme');
+            root.classList.remove('light-theme');
+        }
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isMobileReportOpen, setIsMobileReportOpen] = useState(false);
     const [isMobileReportClosing, setIsMobileReportClosing] = useState(false);
@@ -699,6 +717,15 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     </div>
                 </button>
             )}
+
+            {/* Desktop Theme Toggle */}
+            <button
+                className="theme-toggle-desktop"
+                onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+                title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
+            >
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
 
             {/* Mobile Header with Logo and Filter Pills */}
             {!selectedIssue && !reportStep && (
