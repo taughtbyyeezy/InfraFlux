@@ -1359,6 +1359,13 @@ body {
   /* Hide old upload area */
 }
 
+.mobile-separator {
+  width: 100%;
+  height: 1px;
+  background: var(--glass-border);
+  margin: 0.5rem 0;
+}
+
 .mobile-report-submit {
   width: 100%;
   min-width: 0;

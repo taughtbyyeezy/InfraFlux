@@ -1147,6 +1147,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         </div>
 
                         {/* Submit Button */}
+                        <div className="mobile-separator" />
                         <button
                             className="mobile-report-submit"
                             onClick={handleReport}
