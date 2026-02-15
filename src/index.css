@@ -28,7 +28,7 @@
   --text-muted: #6e6e73;
   --text-dim: #86868b;
   --border-light: rgba(0, 0, 0, 0.1);
-  --glass-blur: blur(3px);
+  --glass-blur: blur(5px);
   --glass-surface: rgba(255, 255, 255, 0.1);
   --glass-card: rgba(255, 255, 255, 0.15);
   --glass-border: rgba(0, 0, 0, 0.1);
@@ -300,14 +300,14 @@ body {
 
 .filter-item {
   background: var(--glass-card);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight);
   height: var(--item-height);
   padding: 0 1.25rem;
   border-radius: var(--radius-standard);
-  color: #000;
+  color: #000 !important;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -863,10 +863,10 @@ body {
   align-items: center;
   justify-content: center;
   background: var(--glass-card);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow: var(--glass-highlight);
-  color: #000;
+  color: #000 !important;
   -webkit-appearance: none;
   appearance: none;
   background-clip: padding-box;
