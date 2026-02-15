@@ -770,7 +770,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 <TileLayer
                     url={theme === 'dark'
                         ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                        : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                     }
                 />
                 <MapUpdater center={sector18Center} />
