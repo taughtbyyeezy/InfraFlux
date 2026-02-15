@@ -311,6 +311,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isMobileReportOpen, setIsMobileReportOpen] = useState(false);
     const [isMobileReportClosing, setIsMobileReportClosing] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [adminPassword, setAdminPassword] = useState(sessionStorage.getItem('admin_password') || '');
     const [loginPasswordInput, setLoginPasswordInput] = useState('');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
@@ -722,34 +723,73 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
             </button>
 
-            {/* Mobile Header with Logo and Filter Pills */}
+            {/* Mobile Header with Logo and Hamburger */}
             {!selectedIssue && !reportStep && (
-                <div className="mobile-header">
-                    <div className="mobile-logo">IF</div>
-                    <div className="mobile-filter-pills">
+                <>
+                    <div className="mobile-header">
+                        <div className="mobile-logo">IF</div>
                         <button
-                            className={`mobile-pill ${selectedTypes.includes('pothole') ? 'active pothole' : ''}`}
-                            onClick={() => toggleType('pothole')}
-                            data-type="pothole"
+                            className={`mobile-hamburger ${isMobileMenuOpen ? 'active' : ''}`}
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         >
-                            Pothole
-                        </button>
-                        <button
-                            className={`mobile-pill ${selectedTypes.includes('water_logging') ? 'active water' : ''}`}
-                            onClick={() => toggleType('water_logging')}
-                            data-type="water"
-                        >
-                            Water
-                        </button>
-                        <button
-                            className={`mobile-pill ${selectedTypes.includes('garbage_dump') ? 'active garbage' : ''}`}
-                            onClick={() => toggleType('garbage_dump')}
-                            data-type="garbage"
-                        >
-                            Garbage
+                            <div className="hamburger-line"></div>
+                            <div className="hamburger-line"></div>
+                            <div className="hamburger-line"></div>
                         </button>
                     </div>
-                </div>
+
+                    {/* Mobile Dropdown Menu */}
+                    <div className={`mobile-dropdown ${isMobileMenuOpen ? 'open' : ''}`}>
+                        <div className="mobile-dropdown-content">
+                            <div className="menu-section">
+                                <div className="menu-label">FILTERS</div>
+                                <div className="mobile-filter-grid">
+                                    <button
+                                        className={`mobile-filter-item ${selectedTypes.includes('pothole') ? 'active' : ''}`}
+                                        onClick={() => {
+                                            toggleType('pothole');
+                                        }}
+                                    >
+                                        <div className="filter-dot" style={{ background: '#fbbf24' }}></div>
+                                        Potholes
+                                    </button>
+                                    <button
+                                        className={`mobile-filter-item ${selectedTypes.includes('water_logging') ? 'active' : ''}`}
+                                        onClick={() => {
+                                            toggleType('water_logging');
+                                        }}
+                                    >
+                                        <div className="filter-dot" style={{ background: '#3b82f6' }}></div>
+                                        Water
+                                    </button>
+                                    <button
+                                        className={`mobile-filter-item ${selectedTypes.includes('garbage_dump') ? 'active' : ''}`}
+                                        onClick={() => {
+                                            toggleType('garbage_dump');
+                                        }}
+                                    >
+                                        <div className="filter-dot" style={{ background: '#ef4444' }}></div>
+                                        Garbage
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="menu-section" style={{ marginTop: '1.5rem' }}>
+                                <div className="menu-label">APPEARANCE</div>
+                                <button
+                                    className="mobile-theme-toggle"
+                                    onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+                                >
+                                    {theme === 'light' ? (
+                                        <><Moon size={20} /> Dark Mode</>
+                                    ) : (
+                                        <><Sun size={20} /> Light Mode</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
 
             <MapContainer
