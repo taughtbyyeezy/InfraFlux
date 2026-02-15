@@ -880,7 +880,8 @@ body {
   flex-direction: column;
   transform: translateY(0);
   touch-action: none;
-  transition: transform 0.3s ease-out;
+  transition: transform 0.3s ease-out, bottom 0.2s ease-out, height 0.3s ease-out;
+  /* Match React component transition */
   overflow: hidden;
 }
 

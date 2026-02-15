@@ -122,6 +122,31 @@ const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose
     const startY = useRef(0);
     const currentY = useRef(0);
     const isAnimating = useRef(false);
+    const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.visualViewport) {
+                setViewportHeight(window.visualViewport.height);
+            } else {
+                setViewportHeight(window.innerHeight);
+            }
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+            window.visualViewport.addEventListener('scroll', handleResize);
+        }
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+                window.visualViewport.removeEventListener('scroll', handleResize);
+            }
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     const animateTo = (targetY: number, duration: number = 300) => {
         if (!panelRef.current || isAnimating.current) return;
@@ -180,10 +205,18 @@ const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose
         }
     };
 
+    // Calculate how much the keyboard has pushed up the viewport
+    const keyboardOffset = window.innerHeight - viewportHeight;
+
     return (
         <div
             ref={panelRef}
             className={`mobile-bottom-panel ${isClosing ? 'closing' : ''}`}
+            style={{
+                bottom: `${keyboardOffset}px`,
+                height: keyboardOffset > 0 ? '60vh' : '40vh',
+                transition: isAnimating.current ? 'none' : 'transform 0.3s ease-out, bottom 0.2s ease-out, height 0.3s ease-out'
+            }}
         >
             <div
                 className="mobile-bottom-handle"
