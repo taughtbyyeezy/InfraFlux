@@ -38,6 +38,8 @@
   --filter-active-bg: rgba(0, 0, 0, 0.02);
   --filter-active-border: var(--glass-border);
   --filter-active-text: #000000;
+  --filter-dot-border: var(--text-dim);
+  --filter-dot-shadow: none;
   color-scheme: light;
 }
 
@@ -65,6 +67,8 @@
   --filter-active-bg: rgba(34, 211, 238, 0.05);
   --filter-active-border: rgba(34, 211, 238, 0.4);
   --filter-active-text: #ffffff;
+  --filter-dot-border: var(--accent);
+  --filter-dot-shadow: 0 0 10px var(--accent);
   color-scheme: dark;
 }
 
@@ -93,6 +97,8 @@
     --filter-active-bg: rgba(34, 211, 238, 0.05);
     --filter-active-border: rgba(34, 211, 238, 0.4);
     --filter-active-text: #ffffff;
+    --filter-dot-border: var(--accent);
+    --filter-dot-shadow: 0 0 10px var(--accent);
     color-scheme: dark;
   }
 }
@@ -349,8 +355,8 @@ body {
 
 .filter-item.active .filter-dot {
   background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
+  border-color: var(--filter-dot-border);
+  box-shadow: var(--filter-dot-shadow);
 }
 
 /* Buttons */
