@@ -28,11 +28,11 @@
   --text-muted: #6e6e73;
   --text-dim: #86868b;
   --border-light: rgba(0, 0, 0, 0.1);
-  --glass-blur: blur(40px);
-  --glass-surface: rgba(255, 255, 255, 0.4);
-  --glass-card: rgba(255, 255, 255, 0.5);
-  --glass-border: rgba(0, 0, 0, 0.05);
-  --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  --glass-blur: blur(0px);
+  --glass-surface: rgba(255, 255, 255, 0.1);
+  --glass-card: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.3);
   --glass-refraction: rgba(0, 0, 0, 0.01);
   color-scheme: light;
 }
@@ -302,7 +302,7 @@ body {
   height: var(--item-height);
   padding: 0 1.25rem;
   border-radius: var(--radius-standard);
-  color: var(--text-muted);
+  color: #000;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -343,7 +343,7 @@ body {
 .report-btn-highlight {
   width: 100%;
   background: var(--accent);
-  color: #000;
+  color: #fff;
   border: none;
   height: 50px;
   border-radius: 12px;
@@ -861,7 +861,7 @@ body {
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-highlight);
-  color: var(--text-secondary);
+  color: #000;
   -webkit-appearance: none;
   appearance: none;
   background-clip: padding-box;
