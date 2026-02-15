@@ -51,6 +51,7 @@
   --text-muted: #888;
   --text-dim: #666;
   --border-light: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(30px);
   --glass-surface: rgba(255, 255, 255, 0.03);
   --glass-card: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.1);
@@ -74,6 +75,7 @@
     --text-muted: #888;
     --text-dim: #666;
     --border-light: rgba(255, 255, 255, 0.08);
+    --glass-blur: blur(30px);
     --glass-surface: rgba(255, 255, 255, 0.03);
     --glass-card: rgba(255, 255, 255, 0.04);
     --glass-border: rgba(255, 255, 255, 0.1);
