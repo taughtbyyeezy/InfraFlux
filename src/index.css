@@ -75,6 +75,7 @@ body {
   top: 0;
   height: 100vh;
   background: var(--glass-surface);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   z-index: var(--z-sidebar);
   display: flex;
@@ -122,6 +123,7 @@ body {
   width: 44px;
   height: 44px;
   background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-light);
   border-radius: 12px;
@@ -210,6 +212,7 @@ body {
 
 .filter-item {
   background: var(--glass-card);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight);
@@ -310,6 +313,7 @@ body {
   width: 48px;
   height: 48px;
   background: var(--glass-surface);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight);
@@ -384,6 +388,7 @@ body {
 
 .info-card {
   background: var(--glass-card);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight);
@@ -495,6 +500,7 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
@@ -529,6 +535,7 @@ body {
 
 .checkbox-label {
   background: rgba(255, 255, 255, 0.01);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-light);
   height: var(--item-height);
@@ -549,6 +556,7 @@ body {
 /* Report Modal */
 .detail-modal {
   background: var(--glass-surface);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight);
@@ -720,6 +728,7 @@ body {
   right: 0;
   z-index: var(--z-floating);
   background: var(--glass-surface);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight), 0 4px 30px rgba(0, 0, 0, 0.3);
@@ -765,9 +774,13 @@ body {
   align-items: center;
   justify-content: center;
   background: var(--glass-card);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-highlight);
   color: var(--text-secondary);
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
 }
 
 .mobile-pill:hover {
@@ -804,6 +817,7 @@ body {
   right: 0;
   z-index: var(--z-floating);
   background: var(--glass-surface);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight), 0 -4px 30px rgba(0, 0, 0, 0.3);
@@ -829,6 +843,9 @@ body {
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(34, 211, 238, 0.4);
   transition: all 0.3s;
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
 }
 
 .mobile-locate-btn {
@@ -836,6 +853,7 @@ body {
   width: 44px;
   height: 44px;
   background: var(--glass-card);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-standard);
@@ -846,6 +864,8 @@ body {
   cursor: pointer;
   box-shadow: var(--glass-highlight);
   transition: all 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .mobile-report-btn:hover {
@@ -871,6 +891,7 @@ body {
   height: 40vh;
   z-index: var(--z-sidebar);
   background: var(--glass-surface);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--glass-border);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
@@ -1132,6 +1153,7 @@ body {
   width: 28px;
   height: 28px;
   background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
@@ -1176,8 +1198,9 @@ body {
   line-height: 1.2;
   flex-shrink: 0;
   -webkit-appearance: none;
-  -moz-appearance: none;
   appearance: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .mobile-report-submit svg {
@@ -1280,6 +1303,7 @@ body {
   display: flex;
   align-items: stretch;
   background: var(--glass-card);
+  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-standard);
