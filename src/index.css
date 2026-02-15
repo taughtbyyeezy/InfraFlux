@@ -28,7 +28,7 @@
   --text-muted: #6e6e73;
   --text-dim: #86868b;
   --border-light: rgba(0, 0, 0, 0.1);
-  --glass-blur: blur(7px);
+  --glass-blur: blur(10px);
   --glass-surface: rgba(255, 255, 255, 0.1);
   --glass-card: rgba(255, 255, 255, 0.15);
   --glass-border: rgba(0, 0, 0, 0.1);
