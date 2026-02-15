@@ -38,8 +38,14 @@
   --filter-active-bg: rgba(0, 0, 0, 0.02);
   --filter-active-border: var(--glass-border);
   --filter-active-text: #000000;
+  --filter-text: #000000;
   --filter-dot-border: var(--text-dim);
   --filter-dot-shadow: none;
+  --btn-glow: none;
+  --pill-glow: none;
+  --filter-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 10px 0 40px rgba(0, 0, 0, 0.4);
+  --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -10px 0 40px rgba(0, 0, 0, 0.4);
   color-scheme: light;
 }
 
@@ -67,8 +73,14 @@
   --filter-active-bg: rgba(34, 211, 238, 0.05);
   --filter-active-border: rgba(34, 211, 238, 0.4);
   --filter-active-text: #ffffff;
+  --filter-text: #ffffff;
   --filter-dot-border: var(--accent);
   --filter-dot-shadow: 0 0 10px var(--accent);
+  --btn-glow: 0 4px 20px rgba(34, 211, 238, 0.3);
+  --pill-glow: 0 4px 20px rgba(34, 211, 238, 0.4);
+  --filter-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 20px 0 80px rgba(0, 0, 0, 0.4);
+  --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -20px 0 80px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
 }
 
@@ -97,8 +109,14 @@
     --filter-active-bg: rgba(34, 211, 238, 0.05);
     --filter-active-border: rgba(34, 211, 238, 0.4);
     --filter-active-text: #ffffff;
+    --filter-text: #ffffff;
     --filter-dot-border: var(--accent);
     --filter-dot-shadow: 0 0 10px var(--accent);
+    --btn-glow: 0 4px 20px rgba(34, 211, 238, 0.3);
+    --pill-glow: 0 4px 20px rgba(34, 211, 238, 0.4);
+    --filter-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 20px 0 80px rgba(0, 0, 0, 0.4);
+    --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -20px 0 80px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
   }
 }
@@ -190,9 +208,7 @@ body {
   width: 310px;
   left: -310px;
   border-right: 1px solid var(--glass-border);
-  box-shadow:
-    inset -1px 0 0 var(--glass-refraction),
-    20px 0 80px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-sidebar-left);
 }
 
 .side-menu.open {
@@ -203,9 +219,7 @@ body {
   width: 400px;
   right: -400px;
   border-left: 1px solid var(--glass-border);
-  box-shadow:
-    inset 1px 0 0 var(--glass-refraction),
-    -20px 0 80px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-sidebar-right);
 }
 
 .detail-sidebar.open {
@@ -318,11 +332,11 @@ body {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-highlight);
+  box-shadow: var(--glass-highlight), var(--filter-shadow);
   height: var(--item-height);
   padding: 0 1.25rem;
   border-radius: var(--radius-standard);
-  color: #000 !important;
+  color: var(--filter-text) !important;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -375,13 +389,14 @@ body {
   gap: 0.75rem;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+  box-shadow: var(--btn-glow);
   letter-spacing: 0.05em;
 }
 
 .report-btn-highlight:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(34, 211, 238, 0.5);
+  background: var(--accent-hover);
+  box-shadow: var(--btn-glow);
   filter: brightness(1.1);
 }
 
@@ -881,7 +896,7 @@ body {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: var(--glass-highlight);
-  color: #000 !important;
+  color: var(--filter-text) !important;
   -webkit-appearance: none;
   appearance: none;
   background-clip: padding-box;
@@ -894,7 +909,10 @@ body {
 
 .mobile-pill.active {
   font-weight: 700;
-  background: transparent;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--pill-glow);
+  color: var(--filter-active-text) !important;
 }
 
 .mobile-pill.active.pothole {
@@ -935,7 +953,7 @@ body {
   flex: 1;
   height: 44px;
   background: var(--accent);
-  color: #000;
+  color: var(--filter-active-text);
   border: none;
   border-radius: var(--radius-standard);
   font-size: 0.85rem;

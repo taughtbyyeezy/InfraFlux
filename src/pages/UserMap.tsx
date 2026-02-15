@@ -669,16 +669,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     key={type.id}
                                     className={`filter-item ${selectedTypes.includes(type.id) ? 'active' : ''}`}
                                     onClick={() => toggleType(type.id)}
-                                    style={{
-                                        borderColor: selectedTypes.includes(type.id) ? `${type.color}33` : undefined,
-                                        boxShadow: selectedTypes.includes(type.id) ? `0 0 10px ${type.color}33, inset 0 0 8px ${type.color}1a` : undefined
-                                    }}
                                 >
                                     <span
                                         className="filter-dot"
                                         style={{
                                             background: selectedTypes.includes(type.id) ? type.color : undefined,
-                                            borderColor: selectedTypes.includes(type.id) ? type.color : undefined
                                         }}
                                     ></span>
                                     {type.label}
