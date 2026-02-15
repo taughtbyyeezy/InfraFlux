@@ -18,22 +18,22 @@
 .light-theme {
   --primary: #000000;
   --primary-hover: #1a1a1a;
-  --secondary: #f5f5f7;
+  --secondary: #f0f0f2;
   --accent: #007aff;
   --accent-hover: #0063cc;
   --accent-glow: rgba(0, 122, 255, 0.2);
   --bg-dark: #fbfbfd;
-  --text-primary: #1d1d1f;
-  --text-secondary: #48484a;
-  --text-muted: #86868b;
-  --text-dim: #aeaeb2;
-  --border-light: rgba(0, 0, 0, 0.05);
-  --glass-blur: blur(30px);
-  --glass-surface: rgba(255, 255, 255, 0.7);
-  --glass-card: rgba(254, 254, 254, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.1);
-  --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.7);
-  --glass-refraction: rgba(0, 0, 0, 0.02);
+  --text-primary: #121213;
+  --text-secondary: #323234;
+  --text-muted: #6e6e73;
+  --text-dim: #86868b;
+  --border-light: rgba(0, 0, 0, 0.1);
+  --glass-blur: blur(25px);
+  --glass-surface: rgba(255, 255, 255, 0.75);
+  --glass-card: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  --glass-refraction: rgba(0, 0, 0, 0.03);
   color-scheme: light;
 }
 
@@ -433,8 +433,8 @@ body {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--accent-glow);
+  color: var(--text-primary);
 }
 
 /* Detail Header */
@@ -451,14 +451,14 @@ body {
 .detail-title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   text-transform: capitalize;
   margin: 0 0 0.25rem 0;
 }
 
 .case-id {
   font-size: 0.8rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-family: monospace;
 }
 
@@ -530,14 +530,14 @@ body {
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-weight: 700;
 }
 
 .info-card-value {
   font-size: 0.9rem;
-  font-weight: 400;
-  color: white;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .status-badge-active {
@@ -552,11 +552,11 @@ body {
 
 /* Description & Evidence */
 .description-box {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-card);
   border: 1px solid var(--border-light);
   padding: 1.25rem;
   border-radius: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -613,7 +613,7 @@ body {
 }
 
 .overlay-close:hover {
-  color: white;
+  color: var(--text-primary);
 }
 
 .checkbox-label {
@@ -669,9 +669,10 @@ body {
 }
 
 .note-bubble {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-light);
   border-radius: 12px;
-  color: white;
+  color: var(--text-primary);
   font-family: inherit;
 }
 
@@ -825,7 +826,7 @@ body {
   width: 40px;
   height: 40px;
   background: var(--primary);
-  color: var(--bg-dark);
+  color: var(--secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1355,7 +1356,7 @@ body {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   letter-spacing: -0.02em;
 }
 
