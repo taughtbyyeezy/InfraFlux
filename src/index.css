@@ -46,7 +46,7 @@
   --filter-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 10px 0 40px rgba(0, 0, 0, 0.4);
   --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -10px 0 40px rgba(0, 0, 0, 0.4);
-  --glass-opaque: #ffffff;
+  --glass-opaque: #ebebe9;
   color-scheme: light;
 }
 
@@ -213,6 +213,7 @@ body {
   border-right: 1px solid var(--glass-border);
   box-shadow: var(--shadow-sidebar-left);
 }
+
 
 .side-menu.open {
   left: 0;
@@ -768,8 +769,7 @@ body {
   position: absolute;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  box-shadow: 0 0 12px currentColor;
-  /* Subtle glow */
+  /* Subtle glow removed as requested */
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -806,7 +806,6 @@ body {
 
 .glow-dot:hover {
   transform: translate(-50%, -50%) scale(1.4);
-  box-shadow: 0 0 20px currentColor;
 }
 
 .issue-icon {
