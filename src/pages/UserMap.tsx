@@ -289,6 +289,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     }, []);
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['pothole', 'water_logging', 'garbage_dump']);
     const [map, setMap] = useState<L.Map | null>(null);
+    const [theme, setTheme] = useState<'light' | 'dark'>(window.innerWidth <= 767 ? 'light' : 'dark');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isMobileReportOpen, setIsMobileReportOpen] = useState(false);
     const [isMobileReportClosing, setIsMobileReportClosing] = useState(false);
@@ -328,7 +329,9 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <= 767);
+            const mobile = window.innerWidth <= 767;
+            setIsMobile(mobile);
+            setTheme(mobile ? 'light' : 'dark');
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
@@ -738,7 +741,10 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 style={{ height: '100%', width: '100%' }}
             >
                 <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    url={theme === 'dark'
+                        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                    }
                 />
                 <MapUpdater center={sector18Center} />
                 <ZoomHandler onZoomChange={setZoom} />
