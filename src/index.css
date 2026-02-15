@@ -35,6 +35,9 @@
   --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.3);
   --glass-refraction: rgba(0, 0, 0, 0.01);
   --btn-text: #ffffff;
+  --filter-active-bg: rgba(0, 0, 0, 0.02);
+  --filter-active-border: var(--glass-border);
+  --filter-active-text: #000000;
   color-scheme: light;
 }
 
@@ -59,6 +62,9 @@
   --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
   --glass-refraction: rgba(255, 255, 255, 0.05);
   --btn-text: #000000;
+  --filter-active-bg: rgba(34, 211, 238, 0.05);
+  --filter-active-border: rgba(34, 211, 238, 0.4);
+  --filter-active-text: #ffffff;
   color-scheme: dark;
 }
 
@@ -84,6 +90,9 @@
     --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
     --glass-refraction: rgba(255, 255, 255, 0.05);
     --btn-text: #000000;
+    --filter-active-bg: rgba(34, 211, 238, 0.05);
+    --filter-active-border: rgba(34, 211, 238, 0.4);
+    --filter-active-text: #ffffff;
     color-scheme: dark;
   }
 }
@@ -323,9 +332,9 @@ body {
 }
 
 .filter-item.active {
-  background: rgba(34, 211, 238, 0.05);
-  border-color: rgba(34, 211, 238, 0.4);
-  color: white;
+  background: var(--filter-active-bg);
+  border-color: var(--filter-active-border);
+  color: var(--filter-active-text) !important;
 }
 
 .filter-dot {
