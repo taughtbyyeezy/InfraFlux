@@ -1273,8 +1273,8 @@ body {
 .mobile-gps-btn {
   width: 48px;
   height: 48px;
-  background: var(--accent);
-  color: #000;
+  background: #007aff;
+  color: #ffffff;
   border: none;
   border-radius: var(--radius-standard);
   display: flex;
@@ -1282,7 +1282,7 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
 }
 
 .mobile-gps-btn:active {
