@@ -1015,7 +1015,7 @@ body {
 .mobile-report-btn {
   flex: 1;
   height: 44px;
-  background: var(--accent);
+  background: #007aff;
   color: #ffffff;
   border: none;
   border-radius: var(--radius-standard);
@@ -1026,7 +1026,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
   transition: all 0.3s;
   -webkit-appearance: none;
   appearance: none;
