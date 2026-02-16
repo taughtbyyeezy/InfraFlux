@@ -719,7 +719,12 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
             {/* Fixed Logo for Desktop */}
             <div className="desktop-logo-fixed">
-                <div className="logo-icon">IF</div>
+                <div className="logo-icon">
+                    <img
+                        src={theme === 'light' ? '/infrafluxwhite.png' : '/infrafluxblack.png'}
+                        alt="InfraFlux Logo"
+                    />
+                </div>
                 <div>
                     <div className="logo-text">InfraFlux</div>
                 </div>
@@ -749,7 +754,12 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             {!selectedIssue && !reportStep && (
                 <>
                     <div className="mobile-header">
-                        <div className="mobile-logo">IF</div>
+                        <div className="mobile-logo">
+                            <img
+                                src={theme === 'light' ? '/infrafluxwhite.png' : '/infrafluxblack.png'}
+                                alt="InfraFlux Logo"
+                            />
+                        </div>
                         <button
                             className={`mobile-hamburger ${isMobileMenuOpen ? 'active' : ''}`}
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
