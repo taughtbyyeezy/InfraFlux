@@ -829,9 +829,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 zoom={zoom}
                 scrollWheelZoom={true}
                 zoomControl={false}
-                maxBounds={rewariBounds}
-                minZoom={12}
-                maxBoundsViscosity={1.0}
                 style={{ height: '100%', width: '100%' }}
             >
                 <TileLayer
