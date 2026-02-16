@@ -47,6 +47,18 @@
   --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 10px 0 40px rgba(0, 0, 0, 0.4);
   --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -10px 0 40px rgba(0, 0, 0, 0.4);
   --glass-opaque: #ebebe9;
+
+  /* Magnitude Levels - Light Theme */
+  --mag-low-bg: #ecfdf5;
+  --mag-low-text: #059669;
+  --mag-low-border: #10b981;
+  --mag-mod-bg: #fffbeb;
+  --mag-mod-text: #d97706;
+  --mag-mod-border: #f59e0b;
+  --mag-high-bg: #fef2f2;
+  --mag-high-text: #dc2626;
+  --mag-high-border: #ef4444;
+
   color-scheme: light;
 }
 
@@ -83,6 +95,18 @@
   --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 20px 0 80px rgba(0, 0, 0, 0.4);
   --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -20px 0 80px rgba(0, 0, 0, 0.4);
   --glass-opaque: #1a1a1a;
+
+  /* Magnitude Levels - Dark Theme */
+  --mag-low-bg: rgba(16, 185, 129, 0.1);
+  --mag-low-text: #34d399;
+  --mag-low-border: rgba(16, 185, 129, 0.4);
+  --mag-mod-bg: rgba(245, 158, 11, 0.1);
+  --mag-mod-text: #fbbf24;
+  --mag-mod-border: rgba(245, 158, 11, 0.4);
+  --mag-high-bg: rgba(239, 68, 68, 0.1);
+  --mag-high-text: #f87171;
+  --mag-high-border: rgba(239, 68, 68, 0.4);
+
   color-scheme: dark;
 }
 
@@ -1174,23 +1198,23 @@ body {
 }
 
 .magnitude-btn.selected[data-value="3"] {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.5);
-  color: #166534;
+  background: var(--mag-low-bg);
+  border-color: var(--mag-low-border);
+  color: var(--mag-low-text);
   font-weight: 700;
 }
 
 .magnitude-btn.selected[data-value="5"] {
-  background: rgba(251, 191, 36, 0.15);
-  border-color: rgba(251, 191, 36, 0.5);
-  color: #92400e;
+  background: var(--mag-mod-bg);
+  border-color: var(--mag-mod-border);
+  color: var(--mag-mod-text);
   font-weight: 700;
 }
 
 .magnitude-btn.selected[data-value="10"] {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #991b1b;
+  background: var(--mag-high-bg);
+  border-color: var(--mag-high-border);
+  color: var(--mag-high-text);
   font-weight: 700;
 }
 
