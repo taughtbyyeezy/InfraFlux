@@ -669,14 +669,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             {/* Left Sidebar Menu */}
             <div className={`side-menu ${isMenuOpen ? 'open' : ''}`}>
                 <div className="sidebar-header">
-                    <button className="hamburger-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                            <div style={{ width: 24, height: 2, background: 'currentColor' }}></div>
-                            <div style={{ width: 18, height: 2, background: 'currentColor' }}></div>
-                            <div style={{ width: 24, height: 2, background: 'currentColor' }}></div>
-                        </div>
-                    </button>
-                    {/* Logo removed from here */}
+                    {/* Logo and toggle logic handled by floating hamburger */}
                 </div>
 
                 <div className="sidebar-scroll-content">
