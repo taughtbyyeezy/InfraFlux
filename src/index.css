@@ -932,6 +932,22 @@ body {
   object-fit: contain;
 }
 
+.mobile-logo-typeface {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 24px;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.mobile-logo-typeface img {
+  height: 80%;
+  width: auto;
+  object-fit: contain;
+}
+
 .mobile-hamburger {
   width: 44px;
   height: 44px;

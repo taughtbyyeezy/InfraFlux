@@ -765,6 +765,12 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                 alt="InfraFlux Logo"
                             />
                         </div>
+                        <div className="mobile-logo-typeface">
+                            <img
+                                src={theme === 'light' ? '/logo/infraFLUX_black_bohme_mid.png' : '/logo/infraFLUX_white_bohme_mid.png'}
+                                alt="InfraFlux"
+                            />
+                        </div>
                         <button
                             className={`mobile-hamburger ${isMobileMenuOpen ? 'active' : ''}`}
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
