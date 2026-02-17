@@ -971,6 +971,11 @@ body {
   transition: all 0.3s ease;
 }
 
+.dark-theme .hamburger-line,
+:root:not(.light-theme) .hamburger-line {
+  background: #F0E9C9;
+}
+
 .mobile-hamburger.active .hamburger-line:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
