@@ -725,8 +725,13 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         alt="InfraFlux Logo"
                     />
                 </div>
-                <div>
-                    <div className="logo-text">InfraFlux</div>
+                <div className="logo-text-wrapper">
+                    <div className="logo-text">
+                        <img
+                            src={theme === 'light' ? '/logo/infraFLUX_black_bohme_mid.png' : '/logo/infraFLUX_white_bohme_mid.png'}
+                            alt="InfraFlux"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -809,6 +814,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                             <div className="menu-section" style={{ marginTop: '1.5rem' }}>
                                 <div className="menu-label">APPEARANCE</div>
                                 <button
+                                    type="button"
                                     className="mobile-theme-toggle"
                                     onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
                                 >
@@ -886,6 +892,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             {(!selectedIssue && !reportStep && !isMobileReportOpen) && (
                 <div className="mobile-bottom-bar">
                     <button
+                        type="button"
                         className="mobile-report-btn"
                         onClick={() => {
                             setSelectedIssue(null);
@@ -898,6 +905,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         <span>REPORT ISSUE</span>
                     </button>
                     <button
+                        type="button"
                         className="mobile-locate-btn"
                         onClick={handleLocateMe}
                         aria-label="Locate me"
@@ -1053,6 +1061,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                             ) : (
                                 <div className="vote-pill">
                                     <button
+                                        type="button"
                                         className="vote-pill-btn active-btn"
                                         onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'true')}
                                     >
@@ -1061,6 +1070,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     </button>
                                     <div className="vote-pill-separator"></div>
                                     <button
+                                        type="button"
                                         className="vote-pill-btn fixed-btn"
                                         onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'false')}
                                     >
@@ -1128,6 +1138,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     { value: 10, label: 'High Impact' }
                                 ].map((m) => (
                                     <button
+                                        type="button"
                                         key={m.value}
                                         className={`magnitude-btn ${reportForm.magnitude === m.value ? 'selected' : ''}`}
                                         data-value={m.value}
@@ -1187,6 +1198,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         {/* Submit Button */}
                         <div className="mobile-separator" />
                         <button
+                            type="button"
                             className="mobile-report-submit"
                             onClick={handleReport}
                             disabled={!reportForm.location}
@@ -1561,6 +1573,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
                         <div className="sidebar-footer">
                             <button
+                                type="button"
                                 className="btn-resolve-premium"
                                 onClick={handleReport}
                                 disabled={!reportForm.location}

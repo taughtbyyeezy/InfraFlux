@@ -10,7 +10,13 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   transition: background-color 0.3s ease, color 0.3s ease;
+
+  /* Logo Settings */
+  --logo-x-offset: -10px;
 }
 
 /* Base Light Theme Tokens */
@@ -64,7 +70,7 @@
 
 /* Base Dark Theme Tokens */
 .dark-theme {
-  --primary: #ffffff;
+  --primary: #F0E9C9;
   --primary-hover: #e5e5e5;
   --secondary: #1a1a1a;
   --accent: #22d3ee;
@@ -113,7 +119,7 @@
 /* Desktop Logic: Apply Dark Theme by default IF no manual class is set */
 @media (min-width: 768px) {
   :root:not(.light-theme) {
-    --primary: #ffffff;
+    --primary: #F0E9C9;
     --primary-hover: #e5e5e5;
     --secondary: #1a1a1a;
     --accent: #22d3ee;
@@ -309,10 +315,23 @@ body {
   object-fit: contain;
 }
 
+.logo-text-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  transform: translateX(var(--logo-x-offset));
+}
+
 .logo-text {
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.logo-text img {
+  height: 100%;
+  width: auto;
+  object-fit: contain;
 }
 
 .logo-subtitle {
@@ -424,6 +443,8 @@ body {
   transition: all 0.3s;
   box-shadow: var(--btn-glow);
   letter-spacing: 0.05em;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .report-btn-highlight:hover {
@@ -448,6 +469,8 @@ body {
   gap: 0.75rem;
   cursor: pointer;
   transition: all 0.3s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .btn-resolve-premium:hover {
@@ -567,6 +590,8 @@ body {
   justify-content: center;
   color: var(--text-muted);
   flex-shrink: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .status-dot-outer {
@@ -1018,6 +1043,8 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .mobile-theme-toggle:active {
@@ -1199,6 +1226,8 @@ body {
   justify-content: center;
   text-align: center;
   white-space: nowrap;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .magnitude-btn:hover {
@@ -1586,6 +1615,9 @@ body {
   padding: 0 1.25rem;
   border-radius: var(--radius-standard);
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
   transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
@@ -1650,10 +1682,11 @@ body {
   position: fixed;
   top: 24px;
   left: 84px;
+  width: calc(310px - 84px);
   height: 44px;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0;
   z-index: 4001;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
