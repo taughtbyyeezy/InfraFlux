@@ -484,20 +484,22 @@ body {
   position: fixed;
   top: 1.5rem;
   left: 1.5rem;
-  width: 48px;
-  height: 48px;
-  background: var(--glass-surface);
+  width: 44px;
+  height: 44px;
+  background: var(--glass-card);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-highlight);
-  border-radius: var(--radius-standard);
+  box-shadow: var(--glass-highlight), 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   cursor: pointer;
   z-index: var(--z-floating);
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .floating-hamburger:hover {
