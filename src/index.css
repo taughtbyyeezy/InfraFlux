@@ -498,7 +498,7 @@ body {
   justify-content: center;
   gap: 5px;
   cursor: pointer;
-  z-index: var(--z-floating);
+  z-index: 4001;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -978,15 +978,18 @@ body {
   background: #F0E9C9;
 }
 
-.mobile-hamburger.active .hamburger-line:nth-child(1) {
+.mobile-hamburger.active .hamburger-line:nth-child(1),
+.floating-hamburger.active .hamburger-line:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
 
-.mobile-hamburger.active .hamburger-line:nth-child(2) {
+.mobile-hamburger.active .hamburger-line:nth-child(2),
+.floating-hamburger.active .hamburger-line:nth-child(2) {
   opacity: 0;
 }
 
-.mobile-hamburger.active .hamburger-line:nth-child(3) {
+.mobile-hamburger.active .hamburger-line:nth-child(3),
+.floating-hamburger.active .hamburger-line:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
 

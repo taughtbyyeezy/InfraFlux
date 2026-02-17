@@ -735,14 +735,16 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 </div>
             </div>
 
-            {/* Floating Hamburger for when menu is closed */}
-            {!isMenuOpen && (
-                <button className="floating-hamburger" onClick={() => setIsMenuOpen(true)}>
-                    <div className="hamburger-line"></div>
-                    <div className="hamburger-line"></div>
-                    <div className="hamburger-line"></div>
-                </button>
-            )}
+            {/* Floating Hamburger */}
+            <button
+                className={`floating-hamburger ${isMenuOpen ? 'active' : ''}`}
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                style={{ zIndex: 4001 }}
+            >
+                <div className="hamburger-line"></div>
+                <div className="hamburger-line"></div>
+                <div className="hamburger-line"></div>
+            </button>
 
             {/* Desktop Theme Toggle */}
             <button
