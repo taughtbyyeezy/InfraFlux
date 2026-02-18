@@ -83,8 +83,8 @@
   --text-dim: #666;
   --border-light: rgba(255, 255, 255, 0.08);
   --glass-blur: blur(30px);
-  --glass-surface: rgba(255, 255, 255, 0.03);
-  --glass-card: rgba(255, 255, 255, 0.04);
+  --glass-surface: rgba(10, 10, 10, 0.7);
+  --glass-card: rgba(30, 30, 30, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
   --glass-refraction: rgba(255, 255, 255, 0.05);
@@ -132,8 +132,8 @@
     --text-dim: #666;
     --border-light: rgba(255, 255, 255, 0.08);
     --glass-blur: blur(30px);
-    --glass-surface: rgba(255, 255, 255, 0.03);
-    --glass-card: rgba(255, 255, 255, 0.04);
+    --glass-surface: rgba(10, 10, 10, 0.7);
+    --glass-card: rgba(30, 30, 30, 0.6);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
     --glass-refraction: rgba(255, 255, 255, 0.05);
@@ -173,6 +173,7 @@
   box-shadow: var(--glass-highlight), 0 4px 20px rgba(0, 0, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--accent);
+  transform: translateZ(0);
 }
 
 .theme-toggle-desktop:hover {
@@ -205,6 +206,8 @@ body {
 
 #root {
   height: 100vh;
+  height: -webkit-fill-available;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -235,6 +238,7 @@ body {
   display: flex;
   flex-direction: column;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
 }
 
 .side-menu {
@@ -396,6 +400,10 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
+  transform: translateZ(0);
 }
 
 .filter-item:hover {
@@ -500,6 +508,7 @@ body {
   cursor: pointer;
   z-index: 4001;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
 }
 
 .floating-hamburger:hover {
@@ -576,6 +585,10 @@ body {
   align-items: center;
   gap: 0.7rem;
   transition: all 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
+  transform: translateZ(0);
 }
 
 .info-card:hover {
@@ -725,6 +738,7 @@ body {
   gap: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+  transform: translateZ(0);
 }
 
 .checkbox-label:hover {
@@ -744,6 +758,7 @@ body {
   width: 90%;
   max-width: 500px;
   position: relative;
+  transform: translateZ(0);
 }
 
 .detail-subtitle {
@@ -915,6 +930,7 @@ body {
   height: 70px;
   align-items: center;
   justify-content: space-between;
+  transform: translateZ(0);
 }
 
 .mobile-logo {
@@ -1009,6 +1025,7 @@ body {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   opacity: 0;
   pointer-events: none;
+  transform: translateZ(0);
 }
 
 .mobile-dropdown.open {
@@ -1095,6 +1112,7 @@ body {
   align-items: center;
   gap: 1rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+  transform: translateZ(0);
 }
 
 .mobile-report-btn {
@@ -1132,6 +1150,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transform: translateZ(0);
   box-shadow: var(--glass-highlight);
   transition: all 0.2s;
   -webkit-appearance: none;
@@ -1169,8 +1188,9 @@ body {
   animation: slideUp 0.3s ease-out;
   display: flex;
   flex-direction: column;
-  transform: translateY(0);
-  touch-action: none;
+  transform: translateY(0) translateZ(0);
+  touch-action: pan-y;
+  overscroll-behavior: none;
   transition: transform 0.3s ease-out, bottom 0.2s ease-out, height 0.3s ease-out;
   /* Match React component transition */
   overflow: hidden;
@@ -1212,6 +1232,8 @@ body {
   background: transparent;
   z-index: 100;
   pointer-events: auto;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 .mobile-bottom-drag-indicator {
@@ -1461,6 +1483,7 @@ body {
   color: white;
   cursor: pointer;
   transition: all 0.2s;
+  transform: translateZ(0);
 }
 
 .preview-remove-btn:hover {
@@ -1616,6 +1639,10 @@ body {
   /* Desktop height */
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
+  transform: translateZ(0);
 }
 
 @media (max-width: 767px) {

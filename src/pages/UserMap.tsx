@@ -64,8 +64,14 @@ const getSelectedLocationIcon = (type: IssueType, zoom: number) => {
 
 const MapUpdater = ({ center }: { center: [number, number] }) => {
     const map = useMap();
+    const lastCenterRef = useRef<string>("");
+
     useEffect(() => {
-        map.setView(center);
+        const centerStr = center.join(',');
+        if (lastCenterRef.current !== centerStr) {
+            map.setView(center);
+            lastCenterRef.current = centerStr;
+        }
     }, [center, map]);
     return null;
 };
@@ -103,9 +109,15 @@ const MapClickHandler = ({ onMapClick }: { onMapClick: (latlng: [number, number]
 // Component to handle map center updates for locate me feature
 const LocateMeHandler = ({ center }: { center: [number, number] | null }) => {
     const map = useMap();
+    const lastCenterRef = useRef<string>("");
+
     useEffect(() => {
         if (center) {
-            map.setView(center, 18);
+            const centerStr = center.join(',');
+            if (lastCenterRef.current !== centerStr) {
+                map.setView(center, 18);
+                lastCenterRef.current = centerStr;
+            }
         }
     }, [center, map]);
     return null;
@@ -120,6 +132,7 @@ interface MobileBottomPanelProps {
 const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose }) => {
     const panelRef = useRef<HTMLDivElement>(null);
     const [isClosing, setIsClosing] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const startY = useRef(0);
     const currentY = useRef(0);
     const isAnimating = useRef(false);
@@ -153,7 +166,8 @@ const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose
         if (!panelRef.current || isAnimating.current) return;
 
         isAnimating.current = true;
-        const startTransform = parseFloat(panelRef.current.style.transform.replace(/[^\d.-]/g, '') || '0');
+        const currentTransform = panelRef.current.style.transform;
+        const startTransform = parseFloat(currentTransform.replace(/[^\d.-]/g, '') || '0');
         const startTime = performance.now();
 
         const animate = (currentTime: number) => {
@@ -181,7 +195,9 @@ const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose
 
     const handleTouchStart = (e: React.TouchEvent) => {
         if (isAnimating.current) return;
+        setIsDragging(true);
         startY.current = e.touches[0].clientY;
+        currentY.current = e.touches[0].clientY;
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
@@ -196,8 +212,9 @@ const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose
 
     const handleTouchEnd = () => {
         if (isAnimating.current) return;
+        setIsDragging(false);
         const diff = currentY.current - startY.current;
-        const threshold = 80;
+        const threshold = 100;
 
         if (diff > threshold) {
             animateTo(window.innerHeight * 0.4, 200);
@@ -208,6 +225,7 @@ const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose
 
     // Calculate how much the keyboard has pushed up the viewport
     const keyboardOffset = window.innerHeight - viewportHeight;
+    const disableTransitions = isDragging || isAnimating.current;
 
     return (
         <div
@@ -216,7 +234,7 @@ const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose
             style={{
                 bottom: `${keyboardOffset}px`,
                 height: keyboardOffset > 0 ? '60vh' : '40vh',
-                transition: isAnimating.current ? 'none' : 'transform 0.3s ease-out, bottom 0.2s ease-out, height 0.3s ease-out'
+                transition: disableTransitions ? 'none' : 'transform 0.3s ease-out, bottom 0.2s ease-out, height 0.3s ease-out'
             }}
         >
             <div
@@ -253,7 +271,11 @@ const ScalingMarkers = ({
                     position={issue.location}
                     icon={getIcon(issue.type, issue.status, zoom, issue.magnitude || 5, issue.approved)}
                     eventHandlers={{
-                        click: () => onSelect(issue),
+                        click: (e) => {
+                            // Stop propagation to prevent map click events
+                            L.DomEvent.stopPropagation(e as any);
+                            onSelect(issue);
+                        },
                     }}
                 />
             ))}
