@@ -384,20 +384,52 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                setReportForm(prev => ({ ...prev, location: [latitude, longitude] }));
-                if (map) {
-                    map.setView([latitude, longitude], 18);
-                }
-            },
-            (error) => {
-                console.error('Geolocation error:', error);
-                alert(`Failed to get location: ${error.message}`);
-            },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
+        if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+            alert('Warning: Geolocation usually requires an HTTPS connection in Safari. Please try using https:// or testing on localhost.');
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
+        const success = (position: GeolocationPosition) => {
+            const { latitude, longitude } = position.coords;
+            setReportForm(prev => ({ ...prev, location: [latitude, longitude] }));
+            if (map) {
+                map.setView([latitude, longitude], 18);
+            }
+        };
+
+        const error = (err: GeolocationPositionError) => {
+            console.error('Geolocation error:', err);
+
+            // If high accuracy fails, try one more time with lower accuracy
+            if (err.code === err.TIMEOUT && options.enableHighAccuracy) {
+                navigator.geolocation.getCurrentPosition(success, (secondErr) => {
+                    alert(`Failed to get location: ${getGeoErrorMessage(secondErr)}`);
+                }, { ...options, enableHighAccuracy: false, timeout: 5000 });
+                return;
+            }
+
+            alert(`Failed to get location: ${getGeoErrorMessage(err)}`);
+        };
+
+        navigator.geolocation.getCurrentPosition(success, error, options);
+    };
+
+    const getGeoErrorMessage = (error: GeolocationPositionError) => {
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                return "Permission denied. Please enable location services in your browser/system settings.";
+            case error.POSITION_UNAVAILABLE:
+                return "Position unavailable. Your device could not determine your location.";
+            case error.TIMEOUT:
+                return "Request timed out. Try again or check your signal.";
+            default:
+                return error.message || "An unknown error occurred.";
+        }
     };
 
     const handleReport = async (e: React.FormEvent) => {
@@ -557,21 +589,44 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     };
 
     const handleLocateMe = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    setUserLocation([latitude, longitude]);
-                },
-                (error) => {
-                    console.error('Geolocation error:', error);
-                    alert('Unable to get your location. Please check location permissions.');
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        } else {
+        if (!navigator.geolocation) {
             alert('Geolocation is not supported by your browser.');
+            return;
         }
+
+        if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+            alert('Note: Safari requires HTTPS for Geolocation. If you are testing on a local IP, it might fail.');
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
+        const success = (position: GeolocationPosition) => {
+            const { latitude, longitude } = position.coords;
+            setUserLocation([latitude, longitude]);
+            if (map) {
+                map.setView([latitude, longitude], 18);
+            }
+        };
+
+        const error = (err: GeolocationPositionError) => {
+            console.error('LocateMe error:', err);
+
+            // Fallback for timeout
+            if (err.code === err.TIMEOUT && options.enableHighAccuracy) {
+                navigator.geolocation.getCurrentPosition(success, (secondErr) => {
+                    alert(`Unable to get location: ${getGeoErrorMessage(secondErr)}`);
+                }, { ...options, enableHighAccuracy: false, timeout: 5000 });
+                return;
+            }
+
+            alert(`Unable to get location: ${getGeoErrorMessage(err)}`);
+        };
+
+        navigator.geolocation.getCurrentPosition(success, error, options);
     };
 
     const filteredIssues = useMemo(() => {

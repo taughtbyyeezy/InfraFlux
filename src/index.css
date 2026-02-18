@@ -83,8 +83,8 @@
   --text-dim: #666;
   --border-light: rgba(255, 255, 255, 0.08);
   --glass-blur: blur(30px);
-  --glass-surface: rgba(10, 10, 10, 0.7);
-  --glass-card: rgba(30, 30, 30, 0.6);
+  --glass-surface: rgba(10, 10, 10, 0.4);
+  --glass-card: rgba(30, 30, 30, 0.45);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
   --glass-refraction: rgba(255, 255, 255, 0.05);
@@ -132,8 +132,8 @@
     --text-dim: #666;
     --border-light: rgba(255, 255, 255, 0.08);
     --glass-blur: blur(30px);
-    --glass-surface: rgba(10, 10, 10, 0.7);
-    --glass-card: rgba(30, 30, 30, 0.6);
+    --glass-surface: rgba(10, 10, 10, 0.4);
+    --glass-card: rgba(30, 30, 30, 0.45);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
     --glass-refraction: rgba(255, 255, 255, 0.05);
@@ -150,7 +150,17 @@
     --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 20px 0 80px rgba(0, 0, 0, 0.4);
     --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -20px 0 80px rgba(0, 0, 0, 0.4);
     --glass-opaque: #1a1a1a;
-    color-scheme: dark;
+
+    /* Magnitude Levels - Dark Theme */
+    --mag-low-bg: rgba(16, 185, 129, 0.1);
+    --mag-low-text: #34d399;
+    --mag-low-border: rgba(16, 185, 129, 0.4);
+    --mag-mod-bg: rgba(245, 158, 11, 0.1);
+    --mag-mod-text: #fbbf24;
+    --mag-mod-border: rgba(245, 158, 11, 0.4);
+    --mag-high-bg: rgba(239, 68, 68, 0.1);
+    --mag-high-text: #f87171;
+    --mag-high-border: rgba(239, 68, 68, 0.4);
   }
 }
 
@@ -1104,10 +1114,10 @@ body {
   right: 0;
   z-index: var(--z-floating);
   background: var(--glass-surface);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  border-top: 1px solid var(--glass-border);
-  box-shadow: var(--glass-highlight), 0 -4px 30px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1);
   padding: 1rem 1.5rem;
   align-items: center;
   gap: 1rem;
