@@ -372,7 +372,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         const handleResize = () => {
             const mobile = window.innerWidth <= 767;
             setIsMobile(mobile);
-            setTheme(mobile ? 'light' : 'dark');
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
