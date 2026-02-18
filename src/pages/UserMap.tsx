@@ -786,7 +786,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                             toggleType('pothole');
                                         }}
                                     >
-                                        <div className="filter-dot" style={{ background: '#fbbf24' }}></div>
+                                        <div className="filter-dot" style={{ background: selectedTypes.includes('pothole') ? '#fbbf24' : 'transparent' }}></div>
                                         Potholes
                                     </button>
                                     <button
@@ -795,7 +795,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                             toggleType('water_logging');
                                         }}
                                     >
-                                        <div className="filter-dot" style={{ background: '#3b82f6' }}></div>
+                                        <div className="filter-dot" style={{ background: selectedTypes.includes('water_logging') ? '#3b82f6' : 'transparent' }}></div>
                                         Water
                                     </button>
                                     <button
@@ -804,7 +804,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                             toggleType('garbage_dump');
                                         }}
                                     >
-                                        <div className="filter-dot" style={{ background: '#ef4444' }}></div>
+                                        <div className="filter-dot" style={{ background: selectedTypes.includes('garbage_dump') ? '#ef4444' : 'transparent' }}></div>
                                         Garbage
                                     </button>
                                 </div>
