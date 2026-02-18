@@ -247,31 +247,34 @@ body {
   z-index: var(--z-sidebar);
   display: flex;
   flex-direction: column;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.3s ease, color 0.3s ease;
+  will-change: transform;
   transform: translateZ(0);
 }
 
 .side-menu {
   width: 310px;
-  left: -310px;
+  left: 0;
+  transform: translateX(-100%);
   border-right: 1px solid var(--glass-border);
   box-shadow: var(--shadow-sidebar-left);
 }
 
 
 .side-menu.open {
-  left: 0;
+  transform: translateX(0);
 }
 
 .detail-sidebar {
   width: 400px;
-  right: -400px;
+  right: 0;
+  transform: translateX(100%);
   border-left: 1px solid var(--glass-border);
   box-shadow: var(--shadow-sidebar-right);
 }
 
 .detail-sidebar.open {
-  right: 0;
+  transform: translateX(0);
 }
 
 /* Sidebar Header */
