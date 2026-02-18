@@ -471,7 +471,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             if (response.ok) {
                 // Optimistic update for the issues list
                 setIssues(prev => prev.map(issue => issue.id === id ? { ...issue, approved: true } : issue));
-                fetchMapState(currentTime);
                 if (selectedIssue && selectedIssue.id === id) {
                     setSelectedIssue({ ...selectedIssue, approved: true });
                 }
@@ -500,7 +499,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 // Optimistic update: remove from list immediately
                 setIssues(prev => prev.filter(issue => issue.id !== id));
                 setSelectedIssue(null);
-                fetchMapState(currentTime);
             } else {
                 const error = await response.json().catch(() => ({}));
                 alert(`Remove failed: ${error.error || 'Server error'} (Status: ${response.status})`);
