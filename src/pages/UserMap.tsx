@@ -315,7 +315,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         const saved = localStorage.getItem('theme') as 'light' | 'dark';
         if (saved) return saved;
-        return window.innerWidth <= 767 ? 'light' : 'dark';
+        return window.innerWidth < 768 ? 'light' : 'dark';
     });
 
     useEffect(() => {
@@ -336,7 +336,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [adminPassword, setAdminPassword] = useState(sessionStorage.getItem('admin_password') || '');
     const [loginPasswordInput, setLoginPasswordInput] = useState('');
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const mobileReportPanelRef = useRef<HTMLDivElement>(null);
     const touchStartY = useRef<number>(0);
     const currentTranslateY = useRef<number>(0);
@@ -370,7 +370,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     useEffect(() => {
         const handleResize = () => {
-            const mobile = window.innerWidth <= 767;
+            const mobile = window.innerWidth < 768;
             setIsMobile(mobile);
         };
         window.addEventListener('resize', handleResize);
@@ -827,7 +827,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             </button>
 
             {/* Mobile Header with Logo and Hamburger */}
-            {!selectedIssue && !reportStep && (
+            {!reportStep && (
                 <>
                     <div className="mobile-header">
                         <div className="mobile-logo">
