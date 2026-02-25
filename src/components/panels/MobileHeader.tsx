@@ -53,7 +53,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                                 className={`mobile-filter-item ${selectedTypes.includes('pothole') ? 'active' : ''}`}
                                 onClick={() => onToggleType('pothole')}
                             >
-                                <div className="filter-dot" style={{ background: selectedTypes.includes('pothole') ? '#fbbf24' : 'transparent' }}></div>
+                                <div className="filter-dot" style={{ background: selectedTypes.includes('pothole') ? '#ef4444' : 'transparent' }}></div>
                                 Potholes
                             </button>
                             <button
@@ -67,7 +67,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                                 className={`mobile-filter-item ${selectedTypes.includes('garbage_dump') ? 'active' : ''}`}
                                 onClick={() => onToggleType('garbage_dump')}
                             >
-                                <div className="filter-dot" style={{ background: selectedTypes.includes('garbage_dump') ? '#ef4444' : 'transparent' }}></div>
+                                <div className="filter-dot" style={{ background: selectedTypes.includes('garbage_dump') ? '#fbbf24' : 'transparent' }}></div>
                                 Garbage Dump
                             </button>
                         </div>

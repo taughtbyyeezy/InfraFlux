@@ -9,9 +9,9 @@ interface FilterSidebarProps {
 }
 
 const filterTypes = [
-    { id: 'pothole', label: 'Potholes', color: '#fbbf24' },
+    { id: 'pothole', label: 'Potholes', color: '#ef4444' },
     { id: 'water_logging', label: 'Water Logging', color: '#3b82f6' },
-    { id: 'garbage_dump', label: 'Garbage Dump', color: '#ef4444' }
+    { id: 'garbage_dump', label: 'Garbage Dump', color: '#fbbf24' }
 ];
 
 export const FilterSidebar: React.FC<FilterSidebarProps> = ({

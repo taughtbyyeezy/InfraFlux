@@ -4,9 +4,9 @@ import { IssueType } from '../../types';
 export const getIcon = (type: string, status: string, zoom: number, magnitude: number = 8, approved: boolean = false) => {
     let color = '#22d3ee'; // Default Cyan
 
-    if (type === 'pothole') color = '#fbbf24'; // Amber
+    if (type === 'pothole') color = '#ef4444'; // Red
     if (type === 'water_logging') color = '#3b82f6'; // Blue
-    if (type === 'garbage_dump') color = '#ef4444'; // Red
+    if (type === 'garbage_dump') color = '#fbbf24'; // Amber
     if (status === 'resolved') color = '#22c55e'; // Green
 
     const size = 16 * Math.pow(1.1, zoom - 16);
@@ -24,9 +24,9 @@ export const getIcon = (type: string, status: string, zoom: number, magnitude: n
 
 export const getSelectedLocationIcon = (type: IssueType, zoom: number) => {
     let color = '#22d3ee'; // Default Cyan
-    if (type === 'pothole') color = '#fbbf24'; // Amber/Yellow
+    if (type === 'pothole') color = '#ef4444'; // Red
     if (type === 'water_logging') color = '#3b82f6'; // Blue
-    if (type === 'garbage_dump') color = '#ef4444'; // Red
+    if (type === 'garbage_dump') color = '#fbbf24'; // Amber
 
     const size = 20 * Math.pow(1.1, zoom - 16);
     const html = `<div class="selected-location-marker" style="

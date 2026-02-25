@@ -564,7 +564,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 >
                     <TileLayer
                         url={theme === 'dark'
-                            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                            ? "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
                             : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                         }
                     />

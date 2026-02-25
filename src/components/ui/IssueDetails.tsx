@@ -91,8 +91,8 @@ export const IssueDetails: React.FC<IssueDetailsProps> = ({ issue, magnitudeLabe
                                 aspectRatio: '16 / 9',
                                 borderRadius: '12px',
                                 overflow: 'hidden',
-                                background: '#09090b',
-                                border: '1px solid var(--glass-border)'
+                                background: 'var(--glass-card)',
+                                border: '1px solid var(--border-light)'
                             }}>
                                 <img
                                     src={img}

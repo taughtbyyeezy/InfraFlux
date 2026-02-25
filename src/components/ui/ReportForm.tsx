@@ -27,9 +27,9 @@ interface ReportFormProps {
 }
 
 const issueTypes = [
-    { value: 'pothole', label: 'Pothole', color: '#fbbf24' },
+    { value: 'pothole', label: 'Pothole', color: '#ef4444' },
     { value: 'water_logging', label: 'Water Logging', color: '#3b82f6' },
-    { value: 'garbage_dump', label: 'Garbage Dump', color: '#ef4444' }
+    { value: 'garbage_dump', label: 'Garbage Dump', color: '#fbbf24' }
 ];
 
 const severityLevels = [
