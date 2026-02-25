@@ -122,6 +122,10 @@
   color-scheme: dark;
 }
 
+.dark-theme .leaflet-container {
+  filter: brightness(1.15) contrast(0.95);
+}
+
 /* Desktop Logic: Apply Dark Theme by default IF no manual class is set */
 @media (min-width: 768px) {
   :root:not(.light-theme) {
