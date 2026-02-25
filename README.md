@@ -3,8 +3,8 @@
 **InfraFlux** is a modern, high-performance infrastructure reporting platform designed to empower citizens and municipalities. It provides a real-time, interactive map for reporting and tracking urban issues like potholes, water logging, and garbage dumps with zero friction.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/taughtbyyeezy/InfraFlux/main/public/infrafluxblack.png" height="60" alt="InfraFlux Logo" />
-  <img src="https://raw.githubusercontent.com/taughtbyyeezy/InfraFlux/main/public/logo/infraFLUX_black_bohme_mid.png" height="60" alt="InfraFlux Typeface" />
+  <img src="https://raw.githubusercontent.com/taughtbyyeezy/InfraFlux/main/public/infrafluxwhite.png" height="60" alt="InfraFlux Logo" />
+  <img src="https://raw.githubusercontent.com/taughtbyyeezy/InfraFlux/main/public/logo/infraFLUX_white_bohme_mid.png" height="60" alt="InfraFlux Typeface" />
 </p>
 
 ## ✨ Key Features
