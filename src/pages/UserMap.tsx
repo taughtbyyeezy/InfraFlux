@@ -1,315 +1,45 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { InfrastructureIssue, IssueType } from '../types';
-import {
-    Play, Pause, AlertCircle, Droplets, Plus, PlusCircle, X, XCircle,
-    ThumbsUp, ThumbsDown, Check, CheckCircle, Search, Navigation,
-    Layers, ChevronRight, Map as MapIcon, Calendar,
-    Trash2, Info, Camera, Trash, AlertTriangle,
-    Clock, CheckCircle2, Maximize2, ExternalLink, Shield,
-    Sun, Moon
-} from 'lucide-react';
-import { format } from 'date-fns';
+import { Navigation, PlusCircle, Sun, Moon } from 'lucide-react';
 import { clusterIssues } from '../utils/clustering';
 import { getVoterId } from '../utils/voterId';
-
-const getIcon = (type: string, status: string, zoom: number, magnitude: number = 8, approved: boolean = false) => {
-    let color = '#22d3ee'; // Default Cyan
-
-    if (type === 'pothole') color = '#fbbf24'; // Amber
-    if (type === 'water_logging') color = '#3b82f6'; // Blue
-    if (type === 'garbage_dump') color = '#ef4444'; // Red
-    if (status === 'resolved') color = '#22c55e'; // Green
-
-    const size = 16 * Math.pow(1.1, zoom - 16);
-
-    const html = `<div class="glow-dot" style="background: ${color}; width: ${size}px; height: ${size}px;"></div>`;
-
-    return L.divIcon({
-        html: html,
-        className: 'issue-icon',
-        iconSize: [0, 0],
-        iconAnchor: [0, 0],
-        popupAnchor: [0, 0],
-    });
-};
-
-const getSelectedLocationIcon = (type: IssueType, zoom: number) => {
-    let color = '#22d3ee'; // Default Cyan
-    if (type === 'pothole') color = '#fbbf24'; // Amber/Yellow
-    if (type === 'water_logging') color = '#3b82f6'; // Blue
-    if (type === 'garbage_dump') color = '#ef4444'; // Red
-
-    const size = 20 * Math.pow(1.1, zoom - 16);
-    const html = `<div class="selected-location-marker" style="
-        background: ${color};
-        width: ${size}px;
-        height: ${size}px;
-        border-radius: 50%;
-        border: 3px solid white;
-        box-shadow: 0 0 0 4px ${color}66, 0 0 20px ${color}cc;
-        animation: pulse 2s infinite;
-        cursor: grab;
-    "></div>`;
-
-    return L.divIcon({
-        html: html,
-        className: 'selected-location-icon',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-        popupAnchor: [0, -size / 2],
-    });
-};
-
-const MapUpdater = ({ center }: { center: [number, number] }) => {
-    const map = useMap();
-    const lastCenterRef = useRef<string>("");
-
-    useEffect(() => {
-        const centerStr = center.join(',');
-        if (lastCenterRef.current !== centerStr) {
-            map.setView(center);
-            lastCenterRef.current = centerStr;
-        }
-    }, [center, map]);
-    return null;
-};
-
-const ZoomHandler = ({ onZoomChange }: { onZoomChange: (zoom: number) => void }) => {
-    const map = useMapEvents({
-        zoomend: () => {
-            onZoomChange(map.getZoom());
-        },
-    });
-    return null;
-};
-
-const MapRegister = ({ setMap }: { setMap: (map: L.Map) => void }) => {
-    const map = useMap();
-    useEffect(() => {
-        setMap(map);
-    }, [map, setMap]);
-    return null;
-};
-
-const MapClickHandler = ({ onMapClick }: { onMapClick: (latlng: [number, number]) => void }) => {
-    useMapEvents({
-        click: (e) => {
-            onMapClick([e.latlng.lat, e.latlng.lng]);
-        },
-        locationerror: (e) => {
-            console.error('Location error:', e.message);
-            alert(`Location access failed: ${e.message}`);
-        }
-    });
-    return null;
-};
-
-// Component to handle map center updates for locate me feature
-const LocateMeHandler = ({ center }: { center: [number, number] | null }) => {
-    const map = useMap();
-    const lastCenterRef = useRef<string>("");
-
-    useEffect(() => {
-        if (center) {
-            const centerStr = center.join(',');
-            if (lastCenterRef.current !== centerStr) {
-                map.setView(center, 18);
-                lastCenterRef.current = centerStr;
-            }
-        }
-    }, [center, map]);
-    return null;
-};
-
-// Mobile Bottom Panel Component with simple drag
-interface MobileBottomPanelProps {
-    children: React.ReactNode;
-    onClose: () => void;
-}
-
-const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({ children, onClose }) => {
-    const panelRef = useRef<HTMLDivElement>(null);
-    const [isClosing, setIsClosing] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-    const startY = useRef(0);
-    const currentY = useRef(0);
-    const isAnimating = useRef(false);
-    const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.visualViewport) {
-                setViewportHeight(window.visualViewport.height);
-            } else {
-                setViewportHeight(window.innerHeight);
-            }
-        };
-
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleResize);
-            window.visualViewport.addEventListener('scroll', handleResize);
-        }
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            if (window.visualViewport) {
-                window.visualViewport.removeEventListener('resize', handleResize);
-                window.visualViewport.removeEventListener('scroll', handleResize);
-            }
-            window.removeEventListener('resize', handleResize);
-        };
-    }, []);
-
-    const animateTo = (targetY: number, duration: number = 300) => {
-        if (!panelRef.current || isAnimating.current) return;
-
-        isAnimating.current = true;
-        const currentTransform = panelRef.current.style.transform;
-        const startTransform = parseFloat(currentTransform.replace(/[^\d.-]/g, '') || '0');
-        const startTime = performance.now();
-
-        const animate = (currentTime: number) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const currentPos = startTransform + (targetY - startTransform) * easeOut;
-
-            if (panelRef.current) {
-                panelRef.current.style.transform = `translateY(${currentPos}px)`;
-            }
-
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                isAnimating.current = false;
-                if (targetY >= window.innerHeight * 0.4) {
-                    onClose();
-                }
-            }
-        };
-
-        requestAnimationFrame(animate);
-    };
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (isAnimating.current) return;
-        setIsDragging(true);
-        startY.current = e.touches[0].clientY;
-        currentY.current = e.touches[0].clientY;
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (isAnimating.current) return;
-        currentY.current = e.touches[0].clientY;
-        const diff = currentY.current - startY.current;
-
-        if (diff > 0 && panelRef.current) {
-            panelRef.current.style.transform = `translateY(${diff}px)`;
-        }
-    };
-
-    const handleTouchEnd = () => {
-        if (isAnimating.current) return;
-        setIsDragging(false);
-        const diff = currentY.current - startY.current;
-        const threshold = 100;
-
-        if (diff > threshold) {
-            animateTo(window.innerHeight * 0.4, 200);
-        } else {
-            animateTo(0, 250);
-        }
-    };
-
-    // Calculate how much the keyboard has pushed up the viewport
-    const keyboardOffset = window.innerHeight - viewportHeight;
-    const disableTransitions = isDragging || isAnimating.current;
-
-    return (
-        <div
-            ref={panelRef}
-            className={`mobile-bottom-panel ${isClosing ? 'closing' : ''}`}
-            style={{
-                bottom: `${keyboardOffset}px`,
-                height: keyboardOffset > 0 ? '60vh' : '40vh',
-                transition: disableTransitions ? 'none' : 'transform 0.3s ease-out, bottom 0.2s ease-out, height 0.3s ease-out'
-            }}
-        >
-            <div
-                className="mobile-bottom-handle"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-            >
-                <div className="mobile-bottom-drag-indicator"></div>
-            </div>
-            <div className="mobile-bottom-content">
-                {children}
-            </div>
-        </div>
-    );
-};
-
-const ScalingMarkers = ({
-    issues,
-    zoom,
-    magnitude,
-    onSelect
-}: {
-    issues: InfrastructureIssue[],
-    zoom: number,
-    magnitude: number,
-    onSelect: (issue: InfrastructureIssue) => void
-}) => {
-    return (
-        <>
-            {issues.filter(issue => issue.status !== 'resolved').map((issue) => (
-                <Marker
-                    key={issue.id}
-                    position={issue.location}
-                    icon={getIcon(issue.type, issue.status, zoom, issue.magnitude || 5, issue.approved)}
-                    eventHandlers={{
-                        click: (e) => {
-                            // Stop propagation to prevent map click events
-                            L.DomEvent.stopPropagation(e as any);
-                            onSelect(issue);
-                        },
-                    }}
-                />
-            ))}
-        </>
-    );
-};
+import { useToast } from '../contexts/ToastContext';
+import { MapLoadingOverlay } from '../components/Skeleton';
+import { hapticButton, hapticSuccess } from '../utils/haptic';
+import {
+    MapUpdater,
+    ZoomHandler,
+    MapRegister,
+    MapClickHandler,
+    LocateMeHandler,
+    ScalingMarkers,
+    getSelectedLocationIcon,
+    MobileBottomPanel,
+    FilterSidebar,
+    MobileHeader,
+    VoteButtons,
+    IssueDetails,
+    AdminLoginOverlay,
+    ReportForm
+} from '../components';
 
 const sector18Center: [number, number] = [28.1711, 76.6211];
-const rewariBounds: [[number, number], [number, number]] = [
-    [27.9, 76.2],
-    [28.5, 76.9]
-];
 
 interface UserMapProps {
     isAdmin?: boolean;
 }
 
 const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
+    const { addToast } = useToast();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [issues, setIssues] = useState<InfrastructureIssue[]>([]);
     const [selectedIssue, setSelectedIssue] = useState<InfrastructureIssue | null>(null);
     const [zoom, setZoom] = useState(16);
     const [isLoading, setIsLoading] = useState(false);
-    const [reportStep, setReportStep] = useState<'type' | 'location' | 'form' | null>(null);
+    const [reportStep, setReportStep] = useState<'form' | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    useEffect(() => {
-        if (window.innerWidth > 767) {
-            const timer = setTimeout(() => {
-                setIsMenuOpen(true);
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, []);
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['pothole', 'water_logging', 'garbage_dump']);
     const [map, setMap] = useState<L.Map | null>(null);
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -317,7 +47,39 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         if (saved) return saved;
         return window.innerWidth <= 767 ? 'light' : 'dark';
     });
+    const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+    const [isMobileReportOpen, setIsMobileReportOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [adminPassword, setAdminPassword] = useState(sessionStorage.getItem('admin_password') || '');
+    const [loginPasswordInput, setLoginPasswordInput] = useState('');
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
+    const [votingIssueId, setVotingIssueId] = useState<string | null>(null);
+    const [votingType, setVotingType] = useState<'true' | 'false' | null>(null);
 
+    const [reportForm, setReportForm] = useState({
+        type: 'pothole' as IssueType,
+        note: '',
+        imageUrl: '',
+        imageFile: null as File | null,
+        location: null as [number, number] | null,
+        magnitude: 5,
+        honeypot: '',
+        userLocation: null as [number, number] | null
+    });
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const baseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+
+    // Initialize menu open on desktop
+    useEffect(() => {
+        if (window.innerWidth > 767) {
+            const timer = setTimeout(() => setIsMenuOpen(true), 500);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
+    // Theme effect
     useEffect(() => {
         const root = document.documentElement;
         if (theme === 'light') {
@@ -330,27 +92,14 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-    const [isMobileReportOpen, setIsMobileReportOpen] = useState(false);
-    const [isMobileReportClosing, setIsMobileReportClosing] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [adminPassword, setAdminPassword] = useState(sessionStorage.getItem('admin_password') || '');
-    const [loginPasswordInput, setLoginPasswordInput] = useState('');
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
-    const mobileReportPanelRef = useRef<HTMLDivElement>(null);
-    const touchStartY = useRef<number>(0);
-    const currentTranslateY = useRef<number>(0);
+    // Window resize handler
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 767);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
-    const [reportForm, setReportForm] = useState({
-        type: 'pothole' as IssueType,
-        note: '',
-        imageUrl: '',
-        location: null as [number, number] | null,
-        magnitude: 5
-    });
-
-    const baseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
-
+    // Fetch map data
     const fetchMapState = async (time: Date) => {
         setIsLoading(true);
         try {
@@ -359,6 +108,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             setIssues(Array.isArray(data.issues) ? data.issues : []);
         } catch (error) {
             console.error('Failed to fetch map state:', error);
+            addToast('Failed to fetch map data', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -367,56 +117,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     useEffect(() => {
         fetchMapState(currentTime);
     }, [currentTime]);
-
-    useEffect(() => {
-        const handleResize = () => {
-            const mobile = window.innerWidth <= 767;
-            setIsMobile(mobile);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    const handleGetCurrentLocation = () => {
-        if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser');
-            return;
-        }
-
-        if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
-            alert('Warning: Geolocation usually requires an HTTPS connection in Safari. Please try using https:// or testing on localhost.');
-        }
-
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        };
-
-        const success = (position: GeolocationPosition) => {
-            const { latitude, longitude } = position.coords;
-            setReportForm(prev => ({ ...prev, location: [latitude, longitude] }));
-            if (map) {
-                map.setView([latitude, longitude], 18);
-            }
-        };
-
-        const error = (err: GeolocationPositionError) => {
-            console.error('Geolocation error:', err);
-
-            // If high accuracy fails, try one more time with lower accuracy
-            if (err.code === err.TIMEOUT && options.enableHighAccuracy) {
-                navigator.geolocation.getCurrentPosition(success, (secondErr) => {
-                    alert(`Failed to get location: ${getGeoErrorMessage(secondErr)}`);
-                }, { ...options, enableHighAccuracy: false, timeout: 5000 });
-                return;
-            }
-
-            alert(`Failed to get location: ${getGeoErrorMessage(err)}`);
-        };
-
-        navigator.geolocation.getCurrentPosition(success, error, options);
-    };
 
     const getGeoErrorMessage = (error: GeolocationPositionError) => {
         switch (error.code) {
@@ -431,11 +131,101 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         }
     };
 
+    const handleGetCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            addToast('Geolocation is not supported by your browser', 'warning');
+            return;
+        }
+
+        if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+            addToast('Warning: Geolocation usually requires HTTPS. Please use https:// or test on localhost.', 'warning');
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
+        const success = (position: GeolocationPosition) => {
+            const { latitude, longitude } = position.coords;
+            setReportForm(prev => ({ ...prev, location: [latitude, longitude] }));
+            if (map) {
+                map.setView([latitude, longitude], 18);
+            }
+            hapticSuccess();
+            addToast('Location found successfully', 'success');
+        };
+
+        const error = (err: GeolocationPositionError) => {
+            console.error('Geolocation error:', err);
+            if (err.code === err.TIMEOUT && options.enableHighAccuracy) {
+                navigator.geolocation.getCurrentPosition(success, (secondErr) => {
+                    addToast(`Failed to get location: ${getGeoErrorMessage(secondErr)}`, 'error');
+                }, { ...options, enableHighAccuracy: false, timeout: 5000 });
+                return;
+            }
+            addToast(`Failed to get location: ${getGeoErrorMessage(err)}`, 'error');
+        };
+
+        navigator.geolocation.getCurrentPosition(success, error, options);
+    };
+
     const handleReport = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!reportForm.location) return;
+        if (!reportForm.location) {
+            addToast('Please select a location on the map', 'warning');
+            return;
+        }
 
+        let finalImageUrl = '';
+
+        setIsSubmitting(true);
         try {
+            // Upload to ImgBB only on final submit
+            if (reportForm.imageFile) {
+                const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
+                if (!IMGBB_API_KEY) {
+                    addToast('ImgBB API key is missing', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                setUploadProgress(0);
+
+                finalImageUrl = await new Promise<string>((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    const formData = new FormData();
+                    formData.append('image', reportForm.imageFile!);
+
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (event.lengthComputable) {
+                            const percent = Math.round((event.loaded / event.total) * 100);
+                            setUploadProgress(percent);
+                        }
+                    });
+
+                    xhr.addEventListener('load', () => {
+                        try {
+                            const result = JSON.parse(xhr.responseText);
+                            if (result.success) {
+                                resolve(result.data.url);
+                            } else {
+                                reject(new Error(result.error?.message || 'Upload failed'));
+                            }
+                        } catch (e) {
+                            reject(new Error('Failed to parse ImgBB response'));
+                        }
+                    });
+
+                    xhr.addEventListener('error', () => reject(new Error('Network error')));
+                    xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+
+                    xhr.open('POST', `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`);
+                    xhr.send(formData);
+                });
+            }
+
             const response = await fetch(`${baseUrl}/api/report`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -445,54 +235,54 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     location: reportForm.location,
                     reportedBy: getVoterId(),
                     magnitude: reportForm.magnitude,
-                    ...(reportForm.imageUrl ? { imageUrl: reportForm.imageUrl } : {})
+                    imageUrl: finalImageUrl,
+                    ...(reportForm.honeypot ? { honeypot: reportForm.honeypot } : {}),
+                    ...(userLocation ? { userLocation: userLocation } : {})
                 })
             });
             if (response.ok) {
                 setReportStep(null);
                 setIsMobileReportOpen(false);
-                setReportForm({ type: 'pothole', note: '', imageUrl: '', location: null, magnitude: 5 });
+                setReportForm({
+                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
+                });
+                setUploadProgress(0);
                 fetchMapState(new Date());
+                hapticSuccess();
+                addToast('Issue reported successfully!', 'success');
             } else {
                 const data = await response.json().catch(() => ({}));
-                alert(`Failed to submit report: ${data.error || 'Server error'}`);
+                addToast(`Failed to submit report: ${data.error || 'Server error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to report issue:', error);
-            alert('A network error occurred while submitting the report.');
-        }
-    };
-
-    const handleResolveVote = async (id: string) => {
-        try {
-            const response = await fetch(`${baseUrl}/api/issue/${id}/resolve-vote`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ voterId: getVoterId() })
-            });
-            fetchMapState(currentTime);
-        } catch (error) {
-            console.error('Failed to resolve vote:', error);
+            addToast('A network error occurred while submitting the report.', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleVote = async (id: string, voteType: 'true' | 'false') => {
+        setVotingIssueId(id);
+        setVotingType(voteType);
+
         try {
             const response = await fetch(`${baseUrl}/api/issue/${id}/vote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    vote: voteType,
-                    voterId: getVoterId()
-                })
+                body: JSON.stringify({ vote: voteType, voterId: getVoterId() })
             });
             if (response.ok) {
                 const data = await response.json();
                 if (data.delisted) {
                     setSelectedIssue(null);
+                    addToast('Issue has been delisted due to negative votes', 'info');
+                } else {
+                    const voteLabel = voteType === 'true' ? 'active' : 'fixed';
+                    hapticSuccess();
+                    addToast(`Vote recorded: Marked as ${voteLabel}`, 'success');
                 }
                 fetchMapState(currentTime);
-                // Update selected issue with new vote counts
                 if (selectedIssue && selectedIssue.id === id) {
                     setSelectedIssue({
                         ...selectedIssue,
@@ -502,11 +292,18 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 }
             } else {
                 const data = await response.json().catch(() => ({}));
-                alert(`Failed to record vote: ${data.error || 'Server error'}`);
+                if (response.status === 409) {
+                    addToast('You have already voted on this issue', 'warning');
+                } else {
+                    addToast(`Failed to record vote: ${data.error || 'Server error'}`, 'error');
+                }
             }
         } catch (error) {
             console.error('Failed to vote:', error);
-            alert('A network error occurred while voting.');
+            addToast('A network error occurred while voting.', 'error');
+        } finally {
+            setVotingIssueId(null);
+            setVotingType(null);
         }
     };
 
@@ -522,18 +319,19 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 body: JSON.stringify({ adminAction: 'approve' })
             });
             if (response.ok) {
-                // Optimistic update for the issues list
                 setIssues(prev => prev.map(issue => issue.id === id ? { ...issue, approved: true } : issue));
                 if (selectedIssue && selectedIssue.id === id) {
                     setSelectedIssue({ ...selectedIssue, approved: true });
                 }
+                hapticSuccess();
+                addToast('Issue approved successfully', 'success');
             } else {
                 const error = await response.json().catch(() => ({}));
-                alert(`Approve failed: ${error.error || 'Server error'}`);
+                addToast(`Approve failed: ${error.error || 'Server error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to approve:', error);
-            alert(`Network error while approving: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            addToast(`Network error while approving: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
         }
     };
 
@@ -549,27 +347,34 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 body: JSON.stringify({ adminAction: 'delist' })
             });
             if (response.ok) {
-                // Optimistic update: remove from list immediately
                 setIssues(prev => prev.filter(issue => issue.id !== id));
                 setSelectedIssue(null);
+                hapticSuccess();
+                addToast('Issue removed successfully', 'success');
             } else {
                 const error = await response.json().catch(() => ({}));
-                alert(`Remove failed: ${error.error || 'Server error'} (Status: ${response.status})`);
+                addToast(`Remove failed: ${error.error || 'Server error'} (Status: ${response.status})`, 'error');
             }
         } catch (error) {
             console.error('Failed to remove:', error);
-            alert(`Network error while removing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            addToast(`Network error while removing: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
         }
+    };
+
+    const handleCancelReport = () => {
+        setReportStep(null);
+        setIsMobileReportOpen(false);
+        setReportForm({
+            type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
+        });
     };
 
     const calculateConfidence = (votesTrue: number = 0, votesFalse: number = 0, approved: boolean = false): number => {
         if (approved) return 100;
         const totalVotes = votesTrue + votesFalse;
-        if (totalVotes === 0) return 50; // Default 50% when no votes
+        if (totalVotes === 0) return 50;
 
-        // Wilson score interval for confidence calculation
-        // This gives a more accurate confidence score, especially with low vote counts
-        const z = 1.96; // 95% confidence interval
+        const z = 1.96;
         const phat = votesTrue / totalVotes;
         const n = totalVotes;
 
@@ -580,6 +385,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     };
 
     const toggleType = (type: string) => {
+        hapticButton();
         setSelectedTypes(prev =>
             prev.includes(type)
                 ? prev.filter(t => t !== type)
@@ -589,12 +395,12 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleLocateMe = () => {
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser.');
+            addToast('Geolocation is not supported by your browser.', 'warning');
             return;
         }
 
         if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
-            alert('Note: Safari requires HTTPS for Geolocation. If you are testing on a local IP, it might fail.');
+            addToast('Note: Safari requires HTTPS for Geolocation. Testing on a local IP might fail.', 'warning');
         }
 
         const options = {
@@ -609,20 +415,19 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             if (map) {
                 map.setView([latitude, longitude], 18);
             }
+            hapticSuccess();
+            addToast('Location found successfully', 'success');
         };
 
         const error = (err: GeolocationPositionError) => {
             console.error('LocateMe error:', err);
-
-            // Fallback for timeout
             if (err.code === err.TIMEOUT && options.enableHighAccuracy) {
                 navigator.geolocation.getCurrentPosition(success, (secondErr) => {
-                    alert(`Unable to get location: ${getGeoErrorMessage(secondErr)}`);
+                    addToast(`Unable to get location: ${getGeoErrorMessage(secondErr)}`, 'error');
                 }, { ...options, enableHighAccuracy: false, timeout: 5000 });
                 return;
             }
-
-            alert(`Unable to get location: ${getGeoErrorMessage(err)}`);
+            addToast(`Unable to get location: ${getGeoErrorMessage(err)}`, 'error');
         };
 
         navigator.geolocation.getCurrentPosition(success, error, options);
@@ -645,84 +450,19 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         <div className={`map-container ${isAdmin ? 'admin-mode' : ''}`}>
             {/* Admin Login Overlay */}
             {isAdmin && !adminPassword && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    zIndex: 20000,
-                    background: 'rgba(0,0,0,0.85)',
-                    backdropFilter: 'blur(20px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '20px'
-                }}>
-                    <div style={{
-                        background: 'var(--glass-surface)',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '24px',
-                        padding: '40px',
-                        width: '100%',
-                        maxWidth: '400px',
-                        textAlign: 'center',
-                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
-                    }}>
-                        <Shield style={{ color: 'var(--accent)', marginBottom: '20px' }} size={48} />
-                        <h2 style={{ color: 'white', marginBottom: '10px', fontSize: '1.5rem' }}>Admin Access</h2>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '30px', fontSize: '0.9rem' }}>
-                            Please enter the administrative password to manage infrastructure reports.
-                        </p>
-                        <input
-                            type="password"
-                            placeholder="Admin Password"
-                            value={loginPasswordInput}
-                            onChange={(e) => setLoginPasswordInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && loginPasswordInput) {
-                                    setAdminPassword(loginPasswordInput);
-                                    sessionStorage.setItem('admin_password', loginPasswordInput);
-                                }
-                            }}
-                            style={{
-                                width: '100%',
-                                padding: '15px',
-                                background: 'rgba(255,255,255,0.05)',
-                                border: '1px solid var(--glass-border)',
-                                borderRadius: '12px',
-                                color: 'white',
-                                marginBottom: '20px',
-                                fontSize: '1rem',
-                                outline: 'none'
-                            }}
-                        />
-                        <button
-                            onClick={() => {
-                                if (loginPasswordInput) {
-                                    setAdminPassword(loginPasswordInput);
-                                    sessionStorage.setItem('admin_password', loginPasswordInput);
-                                }
-                            }}
-                            style={{
-                                width: '100%',
-                                padding: '15px',
-                                background: 'var(--accent)',
-                                color: 'black',
-                                border: 'none',
-                                borderRadius: '12px',
-                                fontWeight: '700',
-                                fontSize: '1rem',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            Authorize Access
-                        </button>
-                    </div>
-                </div>
+                <AdminLoginOverlay
+                    password={loginPasswordInput}
+                    onPasswordChange={setLoginPasswordInput}
+                    onSubmit={() => {
+                        if (loginPasswordInput) {
+                            setAdminPassword(loginPasswordInput);
+                            sessionStorage.setItem('admin_password', loginPasswordInput);
+                        }
+                    }}
+                />
             )}
 
+            {/* Admin Mode Badge */}
             {isAdmin && adminPassword && (
                 <div style={{
                     position: 'fixed',
@@ -744,49 +484,18 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     Admin Mode
                 </div>
             )}
+
             {/* Left Sidebar Menu */}
-            <div className={`side-menu ${isMenuOpen ? 'open' : ''}`}>
-                <div className="sidebar-header">
-                    {/* Logo and toggle logic handled by floating hamburger */}
-                </div>
-
-                <div className="sidebar-scroll-content">
-                    <div className="menu-section">
-                        <div className="menu-label">FILTERS</div>
-                        <div className="filter-group">
-                            {[
-                                { id: 'pothole', label: 'Potholes', color: '#fbbf24' },
-                                { id: 'water_logging', label: 'Water Logging', color: '#3b82f6' },
-                                { id: 'garbage_dump', label: 'Garbage Dump', color: '#ef4444' }
-                            ].map(type => (
-                                <div
-                                    key={type.id}
-                                    className={`filter-item ${selectedTypes.includes(type.id) ? 'active' : ''}`}
-                                    onClick={() => toggleType(type.id)}
-                                >
-                                    <span
-                                        className="filter-dot"
-                                        style={{
-                                            background: selectedTypes.includes(type.id) ? type.color : undefined,
-                                        }}
-                                    ></span>
-                                    {type.label}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="sidebar-footer">
-                    <button className="report-btn-highlight" onClick={() => {
-                        setSelectedIssue(null);
-                        setIsMobileReportOpen(false);
-                        setReportStep('form');
-                    }}>
-                        <PlusCircle size={20} /> REPORT ISSUE
-                    </button>
-                </div>
-            </div>
+            <FilterSidebar
+                isOpen={isMenuOpen}
+                selectedTypes={selectedTypes}
+                onToggleType={toggleType}
+                onReportClick={() => {
+                    setSelectedIssue(null);
+                    setIsMobileReportOpen(false);
+                    setReportStep('form');
+                }}
+            />
 
             {/* Fixed Logo for Desktop */}
             <div className="desktop-logo-fixed">
@@ -809,7 +518,10 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             {/* Floating Hamburger */}
             <button
                 className={`floating-hamburger ${isMenuOpen ? 'active' : ''}`}
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                onClick={() => {
+                    hapticButton();
+                    setIsMenuOpen(!isMenuOpen);
+                }}
                 style={{ zIndex: 4001 }}
             >
                 <div className="hamburger-line"></div>
@@ -820,162 +532,100 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             {/* Desktop Theme Toggle */}
             <button
                 className="theme-toggle-desktop"
-                onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+                onClick={() => {
+                    hapticButton();
+                    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+                }}
                 title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
             >
                 {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
             </button>
 
-            {/* Mobile Header with Logo and Hamburger */}
-            {!selectedIssue && !reportStep && (
-                <>
-                    <div className="mobile-header">
-                        <div className="mobile-logo">
-                            <img
-                                src={theme === 'light' ? '/infrafluxwhite.png' : '/infrafluxblack.png'}
-                                alt="InfraFlux Logo"
-                            />
-                        </div>
-                        <div className="mobile-logo-typeface">
-                            <img
-                                src={theme === 'light' ? '/logo/infraFLUX_black_bohme_mid.png' : '/logo/infraFLUX_white_bohme_mid.png'}
-                                alt="InfraFlux"
-                            />
-                        </div>
-                        <button
-                            className={`mobile-hamburger ${isMobileMenuOpen ? 'active' : ''}`}
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        >
-                            <div className="hamburger-line"></div>
-                            <div className="hamburger-line"></div>
-                            <div className="hamburger-line"></div>
-                        </button>
-                    </div>
-
-                    {/* Mobile Dropdown Menu */}
-                    <div className={`mobile-dropdown ${isMobileMenuOpen ? 'open' : ''}`}>
-                        <div className="mobile-dropdown-content">
-                            <div className="menu-section">
-                                <div className="menu-label">FILTERS</div>
-                                <div className="mobile-filter-grid">
-                                    <button
-                                        className={`mobile-filter-item ${selectedTypes.includes('pothole') ? 'active' : ''}`}
-                                        onClick={() => {
-                                            toggleType('pothole');
-                                        }}
-                                    >
-                                        <div className="filter-dot" style={{ background: selectedTypes.includes('pothole') ? '#fbbf24' : 'transparent' }}></div>
-                                        Potholes
-                                    </button>
-                                    <button
-                                        className={`mobile-filter-item ${selectedTypes.includes('water_logging') ? 'active' : ''}`}
-                                        onClick={() => {
-                                            toggleType('water_logging');
-                                        }}
-                                    >
-                                        <div className="filter-dot" style={{ background: selectedTypes.includes('water_logging') ? '#3b82f6' : 'transparent' }}></div>
-                                        Water
-                                    </button>
-                                    <button
-                                        className={`mobile-filter-item ${selectedTypes.includes('garbage_dump') ? 'active' : ''}`}
-                                        onClick={() => {
-                                            toggleType('garbage_dump');
-                                        }}
-                                    >
-                                        <div className="filter-dot" style={{ background: selectedTypes.includes('garbage_dump') ? '#ef4444' : 'transparent' }}></div>
-                                        Garbage
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="menu-section" style={{ marginTop: '1.5rem' }}>
-                                <div className="menu-label">APPEARANCE</div>
-                                <button
-                                    type="button"
-                                    className="mobile-theme-toggle"
-                                    onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
-                                >
-                                    {theme === 'light' ? (
-                                        <><Moon size={20} /> Dark Mode</>
-                                    ) : (
-                                        <><Sun size={20} /> Light Mode</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </>
+            {/* Mobile Header with Logo and Hamburger - Always visible on mobile */}
+            {isMobile && (
+                <MobileHeader
+                    theme={theme}
+                    isMenuOpen={isMobileMenuOpen}
+                    onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    selectedTypes={selectedTypes}
+                    onToggleType={toggleType}
+                    onThemeToggle={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+                />
             )}
 
-            <MapContainer
-                center={sector18Center}
-                zoom={zoom}
-                scrollWheelZoom={true}
-                zoomControl={false}
-                style={{ height: '100%', width: '100%' }}
-            >
-                <TileLayer
-                    url={theme === 'dark'
-                        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                        : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                    }
-                />
-                <MapUpdater center={sector18Center} />
-                <ZoomHandler onZoomChange={setZoom} />
-                <MapRegister setMap={setMap} />
-                <MapClickHandler onMapClick={(loc) => {
-                    if ((reportStep === 'form' && !reportForm.location) || (isMobileReportOpen && !reportForm.location)) {
-                        setReportForm(prev => ({ ...prev, location: loc }));
-                    }
-                }} />
-                <LocateMeHandler center={userLocation} />
-
-                <ScalingMarkers
-                    issues={clusteredMarkers}
+            {/* Map Container */}
+            <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+                <MapContainer
+                    center={sector18Center}
                     zoom={zoom}
-                    magnitude={5}
-                    onSelect={(issue) => {
-                        setReportStep(null);
-                        setIsMobileReportOpen(false);
-                        setSelectedIssue(issue);
-                    }}
-                />
-
-                {reportForm.location && (reportStep === 'form' || isMobileReportOpen) && (
-                    <Marker
-                        key={`selected-${zoom}`}
-                        position={reportForm.location}
-                        icon={getSelectedLocationIcon(reportForm.type, zoom)}
-                        draggable={true}
-                        eventHandlers={{
-                            dragend: (e) => {
-                                const marker = e.target;
-                                const newPos = marker.getLatLng();
-                                setReportForm(prev => ({ ...prev, location: [newPos.lat, newPos.lng] }));
+                    scrollWheelZoom={true}
+                    zoomControl={false}
+                    style={{ height: '100%', width: '100%' }}
+                >
+                    <TileLayer
+                        url={theme === 'dark'
+                            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                        }
+                    />
+                    <MapUpdater center={sector18Center} />
+                    <ZoomHandler onZoomChange={setZoom} />
+                    <MapRegister setMap={setMap} />
+                    <MapClickHandler
+                        onMapClick={(loc) => {
+                            if (reportStep === 'form' || isMobileReportOpen) {
+                                setReportForm(prev => ({ ...prev, location: loc }));
                             }
                         }}
+                        addToast={addToast}
                     />
-                )}
+                    <LocateMeHandler center={userLocation} />
 
-                {reportStep === 'location' && (
-                    <div style={{ position: 'absolute', top: '7rem', left: '50%', transform: 'translateX(-50%)', zIndex: 1100, background: 'white', color: 'black', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
-                        <Navigation size={18} /> Click on map to locate issue
-                        <button onClick={() => setReportStep(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}><X size={18} /></button>
-                    </div>
-                )}
-            </MapContainer>
+                    <ScalingMarkers
+                        issues={clusteredMarkers}
+                        zoom={zoom}
+                        magnitude={5}
+                        onSelect={(issue) => {
+                            hapticButton();
+                            setReportStep(null);
+                            setIsMobileReportOpen(false);
+                            setSelectedIssue(issue);
+                        }}
+                    />
 
-            {/* Mobile Bottom Bar with Report Button and Locate Me */}
+                    {reportForm.location && (reportStep === 'form' || isMobileReportOpen) && (
+                        <Marker
+                            key={`selected-${zoom}`}
+                            position={reportForm.location}
+                            icon={getSelectedLocationIcon(reportForm.type, zoom)}
+                            draggable={true}
+                            eventHandlers={{
+                                dragend: (e) => {
+                                    const marker = e.target;
+                                    const newPos = marker.getLatLng();
+                                    setReportForm(prev => ({ ...prev, location: [newPos.lat, newPos.lng] }));
+                                }
+                            }}
+                        />
+                    )}
+                </MapContainer>
+                {isLoading && <MapLoadingOverlay />}
+            </div>
+
+            {/* Mobile Bottom Bar */}
             {(!selectedIssue && !reportStep && !isMobileReportOpen) && (
                 <div className="mobile-bottom-bar">
                     <button
                         type="button"
                         className="mobile-report-btn"
                         onClick={() => {
+                            hapticButton();
                             setSelectedIssue(null);
                             setReportStep(null);
                             setIsMobileReportOpen(true);
-                            setReportForm({ type: 'pothole', note: '', imageUrl: '', location: null, magnitude: 5 });
+                            setReportForm({
+                                type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
+                            });
                         }}
                     >
                         <PlusCircle size={18} />
@@ -984,7 +634,10 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     <button
                         type="button"
                         className="mobile-locate-btn"
-                        onClick={handleLocateMe}
+                        onClick={() => {
+                            hapticButton();
+                            handleLocateMe();
+                        }}
                         aria-label="Locate me"
                     >
                         <Navigation size={18} />
@@ -992,681 +645,132 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 </div>
             )}
 
-            {/* Mobile Issue Details Panel - Bottom 40% */}
+            {/* Mobile Issue Details Panel */}
             {isMobile && selectedIssue && !reportStep && (
                 <MobileBottomPanel
                     onClose={() => setSelectedIssue(null)}
+                    height={0.5}
+                    modal={true}
                 >
-                    <div className="mobile-detail-content">
+                    <div className="mobile-issue-details">
                         <div className="mobile-detail-header">
                             <h2 className="mobile-detail-title">
-                                {selectedIssue.type === 'water_logging' ? 'Water Logging' : selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' : selectedIssue.type === 'pothole' ? 'Pothole' : String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
+                                {selectedIssue.type === 'water_logging' ? 'Water Logging' :
+                                    selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' :
+                                        selectedIssue.type === 'pothole' ? 'Pothole' :
+                                            String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
                             </h2>
                             <div className="mobile-confidence-badge">
-                                {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}% <span className="confidence-text">Confidence</span>
+                                {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}%
+                                <span className="confidence-text">Confidence</span>
                             </div>
                         </div>
 
-                        <div className="menu-section">
-                            <div className="menu-label">DETAILS</div>
-                            <div className="info-card-list">
-                                <div className="info-card">
-                                    <div className="info-card-icon">
-                                        <div className="status-dot-outer">
-                                            <div className="status-dot-inner"></div>
-                                        </div>
-                                    </div>
-                                    <div className="info-card-content">
-                                        <div className="info-card-label">CURRENT STATUS</div>
-                                        <div className="info-card-value">In Review</div>
-                                    </div>
-                                    <div className="status-badge-active">ACTIVE</div>
-                                </div>
-
-                                <div className="info-card">
-                                    <div className="info-card-icon">
-                                        <AlertTriangle size={18} />
-                                    </div>
-                                    <div className="info-card-content">
-                                        <div className="info-card-label">MAGNITUDE</div>
-                                        <div className="info-card-value">
-                                            {magnitudeLabel(Number(selectedIssue.magnitude) || 5)} Impact
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="info-card">
-                                    <div className="info-card-icon">
-                                        <Clock size={18} />
-                                    </div>
-                                    <div className="info-card-content">
-                                        <div className="info-card-label">REPORTED DATE</div>
-                                        <div className="info-card-value">
-                                            {(() => {
-                                                try {
-                                                    const d = selectedIssue.createdAt ? new Date(selectedIssue.createdAt) : new Date();
-                                                    return isNaN(d.getTime()) ? 'Feb 4, 2026' : format(d, 'MMM d, yyyy');
-                                                } catch (e) {
-                                                    return 'Feb 10, 2026';
-                                                }
-                                            })()}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {selectedIssue.note && (
-                            <div className="menu-section">
-                                <div className="menu-label">DESCRIPTION</div>
-                                <div className="description-box">
-                                    {selectedIssue.note}
-                                </div>
-                            </div>
-                        )}
-
-                        {selectedIssue.images && selectedIssue.images.length > 0 && (
-                            <div className="menu-section">
-                                <div className="menu-label">EVIDENCE</div>
-                                <div className="evidence-box">
-                                    {selectedIssue.images.map((img, idx) => (
-                                        <div key={idx} style={{ position: 'relative', width: '100%' }}>
-                                            <img
-                                                src={img}
-                                                alt={`Evidence ${idx + 1}`}
-                                                className="mobile-evidence-img"
-                                                onError={(e) => {
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.style.display = 'none';
-                                                    if (target.nextSibling) {
-                                                        (target.nextSibling as HTMLElement).style.display = 'flex';
-                                                    }
-                                                }}
-                                            />
-                                            <div style={{
-                                                display: 'none',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                padding: '2rem',
-                                                background: 'rgba(255, 255, 255, 0.05)',
-                                                border: '1px solid var(--glass-border)',
-                                                borderRadius: '12px',
-                                                color: 'var(--text-muted)',
-                                                fontSize: '0.8rem',
-                                                textAlign: 'center',
-                                                gap: '0.5rem'
-                                            }}>
-                                                <ExternalLink size={20} />
-                                                <div>Image failed to load</div>
-                                                <a href={img} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-                                                    View on External Site
-                                                </a>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        <IssueDetails
+                            issue={selectedIssue}
+                            magnitudeLabel={magnitudeLabel}
+                        />
 
                         <div className="mobile-detail-footer">
-                            {isAdmin ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', minHeight: '48px', padding: '0 10px' }}>
-                                    <button
-                                        className="vote-pill-btn active-btn"
-                                        style={{
-                                            background: selectedIssue.approved ? '#6b7280' : '#10b981',
-                                            color: 'white',
-                                            cursor: selectedIssue.approved ? 'not-allowed' : 'pointer',
-                                            opacity: selectedIssue.approved ? 0.7 : 1
-                                        }}
-                                        onClick={() => selectedIssue.id && !selectedIssue.approved && handleApprove(selectedIssue.id)}
-                                        disabled={selectedIssue.approved}
-                                    >
-                                        <Check size={18} />
-                                        <span>{selectedIssue.approved ? 'APPROVED' : 'APPROVE'}</span>
-                                    </button>
-                                    <button
-                                        className="vote-pill-btn fixed-btn"
-                                        style={{ background: '#ef4444', color: 'white' }}
-                                        onClick={() => selectedIssue.id && handleRemove(selectedIssue.id)}
-                                    >
-                                        <Trash size={18} />
-                                        <span>REMOVE</span>
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="vote-pill">
-                                    <button
-                                        type="button"
-                                        className="vote-pill-btn active-btn"
-                                        onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'true')}
-                                    >
-                                        <XCircle size={18} />
-                                        <span>ACTIVE</span>
-                                    </button>
-                                    <div className="vote-pill-separator"></div>
-                                    <button
-                                        type="button"
-                                        className="vote-pill-btn fixed-btn"
-                                        onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'false')}
-                                    >
-                                        <CheckCircle size={18} />
-                                        <span>FIXED IT</span>
-                                    </button>
-                                </div>
-                            )}
+                            <VoteButtons
+                                issue={selectedIssue}
+                                isAdmin={isAdmin}
+                                isVoting={votingIssueId === selectedIssue.id}
+                                votingType={votingType}
+                                onVote={handleVote}
+                                onApprove={handleApprove}
+                                onRemove={handleRemove}
+                                confidence={calculateConfidence(
+                                    selectedIssue.votes_true,
+                                    selectedIssue.votes_false,
+                                    selectedIssue.approved
+                                )}
+                            />
                         </div>
                     </div>
                 </MobileBottomPanel>
             )}
 
-            {/* Mobile Report Form Panel - Bottom 40% */}
+            {/* Mobile Report Form Panel */}
             {isMobileReportOpen && (
                 <MobileBottomPanel
-                    onClose={() => {
-                        setIsMobileReportOpen(false);
-                        setReportForm({ type: 'pothole', note: '', imageUrl: '', location: null, magnitude: 5 });
-                    }}
+                    onClose={handleCancelReport}
+                    height={0.5}
+                    modal={false}
                 >
-                    <div className="mobile-report-content">
-                        {/* Issue Type Dropdown */}
-                        <div className="mobile-report-section">
-                            <label className="mobile-report-label">Issue Type</label>
-                            <select
-                                className="mobile-report-select"
-                                value={reportForm.type}
-                                onChange={(e) => setReportForm(prev => ({ ...prev, type: e.target.value as IssueType }))}
-                            >
-                                <option value="pothole">Pothole</option>
-                                <option value="water_logging">Water Logging</option>
-                                <option value="garbage_dump">Garbage Dump</option>
-                            </select>
-                        </div>
-
-                        {/* Location Coordinates */}
-                        <div className="mobile-report-section">
-                            <label className="mobile-report-label">Location</label>
-                            <div className="mobile-location-wrapper">
-                                <div className="mobile-report-coordinates">
-                                    {reportForm.location ? (
-                                        <span>{reportForm.location[0].toFixed(6)}, {reportForm.location[1].toFixed(6)}</span>
-                                    ) : (
-                                        <span className="mobile-report-coordinates-placeholder">Tap Map or Use GPS</span>
-                                    )}
-                                </div>
-                                <button
-                                    className="mobile-gps-btn"
-                                    onClick={handleGetCurrentLocation}
-                                    title="Use Current Location"
-                                >
-                                    <Navigation size={20} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Magnitude Selection */}
-                        <div className="mobile-report-section">
-                            <label className="mobile-report-label">Magnitude</label>
-                            <div className="magnitude-group">
-                                {[
-                                    { value: 3, label: 'Low Impact' },
-                                    { value: 5, label: 'Moderate' },
-                                    { value: 10, label: 'High Impact' }
-                                ].map((m) => (
-                                    <button
-                                        type="button"
-                                        key={m.value}
-                                        className={`magnitude-btn ${reportForm.magnitude === m.value ? 'selected' : ''}`}
-                                        data-value={m.value}
-                                        onClick={() => setReportForm(prev => ({ ...prev, magnitude: m.value }))}
-                                    >
-                                        {m.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Description */}
-                        <div className="mobile-report-section">
-                            <label className="mobile-report-label">Description</label>
-                            <textarea
-                                className="mobile-report-textarea"
-                                placeholder="Describe the issue..."
-                                value={reportForm.note}
-                                onChange={(e) => setReportForm(prev => ({ ...prev, note: e.target.value }))}
-                                rows={3}
-                            />
-                        </div>
-
-                        {/* Evidence */}
-                        <div className="mobile-report-section">
-                            <label className="mobile-report-label">Evidence</label>
-                            <input
-                                type="text"
-                                className="mobile-report-evidence-url"
-                                placeholder="Paste image URL here..."
-                                value={reportForm.imageUrl}
-                                onChange={(e) => setReportForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                            />
-                            {reportForm.imageUrl && (
-                                <div className="evidence-preview-container">
-                                    <img
-                                        src={reportForm.imageUrl}
-                                        alt="Preview"
-                                        className="evidence-preview-img"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                        onLoad={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'block';
-                                        }}
-                                    />
-                                    <button
-                                        className="preview-remove-btn"
-                                        onClick={() => setReportForm(prev => ({ ...prev, imageUrl: '' }))}
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Submit Button */}
-                        <div className="mobile-separator" />
-                        <button
-                            type="button"
-                            className="mobile-report-submit"
-                            onClick={handleReport}
-                            disabled={!reportForm.location}
-                        >
-                            <PlusCircle size={20} />
-                            Submit Report
-                        </button>
-                    </div>
+                    <ReportForm
+                        formData={reportForm}
+                        onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
+                        onSubmit={handleReport}
+                        onCancel={handleCancelReport}
+                        onGetLocation={handleGetCurrentLocation}
+                        isMobile={isMobile}
+                        uploadProgress={uploadProgress}
+                        isSubmitting={isSubmitting}
+                    />
                 </MobileBottomPanel>
-            )
-            }
+            )}
 
-            {/* Right Sidebar - Shows Issue Details or Report Form */}
-            <div className={`detail-sidebar ${(!isMobile && (selectedIssue || reportStep)) ? 'open' : ''}`}>
-                {/* Issue Details View */}
-                {selectedIssue && !reportStep && (
-                    <>
-                        <button className="close-btn" onClick={() => setSelectedIssue(null)} style={{ top: '1.65rem' }}>
-                            <X size={18} />
-                        </button>
+            {/* Desktop Sidebar - Issue Details */}
+            {!isMobile && selectedIssue && !reportStep && (
+                <div className="detail-sidebar open">
+                    <button className="detail-close-btn" onClick={() => setSelectedIssue(null)}>
+                        <div className="hamburger-line"></div>
+                        <div className="hamburger-line"></div>
+                        <div className="hamburger-line"></div>
+                    </button>
 
-                        <div className="detail-header" style={{ position: 'relative' }}>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '0.75rem',
-                                paddingRight: '50px'
-                            }}>
-                                <h2 className="detail-title" style={{ margin: 0, fontSize: '2rem' }}>
-                                    {selectedIssue.type === 'water_logging' ? 'Water Logging' : selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' : selectedIssue.type === 'pothole' ? 'Pothole' : String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
-                                </h2>
-                            </div>
-                        </div>
+                    <div className="detail-header">
+                        <h2 className="detail-title">
+                            {selectedIssue.type === 'water_logging' ? 'Water Logging' :
+                                selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' :
+                                    selectedIssue.type === 'pothole' ? 'Pothole' :
+                                        String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
+                        </h2>
+                    </div>
 
-                        <div className="sidebar-scroll-content">
+                    <div className="detail-content">
+                        <IssueDetails
+                            issue={selectedIssue}
+                            magnitudeLabel={magnitudeLabel}
+                        />
+                    </div>
 
-                            <div className="menu-section">
-                                <div className="menu-label">DETAILS</div>
-                                <div className="info-card-list">
-                                    <div className="info-card">
-                                        <div className="info-card-icon">
-                                            <div className="status-dot-outer">
-                                                <div className="status-dot-inner"></div>
-                                            </div>
-                                        </div>
-                                        <div className="info-card-content">
-                                            <div className="info-card-label">CURRENT STATUS</div>
-                                            <div className="info-card-value">In Review</div>
-                                        </div>
-                                        <div className="status-badge-active">ACTIVE</div>
-                                    </div>
-
-                                    <div className="info-card">
-                                        <div className="info-card-icon">
-                                            <AlertTriangle size={18} />
-                                        </div>
-                                        <div className="info-card-content">
-                                            <div className="info-card-label">MAGNITUDE</div>
-                                            <div className="info-card-value">
-                                                {magnitudeLabel(Number(selectedIssue.magnitude) || 5)} Impact
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="info-card">
-                                        <div className="info-card-icon">
-                                            <Clock size={18} />
-                                        </div>
-                                        <div className="info-card-content">
-                                            <div className="info-card-label">REPORTED DATE</div>
-                                            <div className="info-card-value">
-                                                {(() => {
-                                                    try {
-                                                        const d = selectedIssue.createdAt ? new Date(selectedIssue.createdAt) : new Date();
-                                                        return isNaN(d.getTime()) ? 'Feb 4, 2026 • 14:20 PM' : format(d, 'MMM d, yyyy • HH:mm a');
-                                                    } catch (e) {
-                                                        return 'Feb 4, 2026 • 14:20 PM';
-                                                    }
-                                                })()}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {selectedIssue.note && (
-                                <div className="menu-section">
-                                    <div className="menu-label">DESCRIPTION</div>
-                                    <div className="description-box">
-                                        {selectedIssue.note}
-                                    </div>
-                                </div>
+                    <div className="detail-footer">
+                        <VoteButtons
+                            issue={selectedIssue}
+                            isAdmin={isAdmin}
+                            isVoting={votingIssueId === selectedIssue.id}
+                            votingType={votingType}
+                            onVote={handleVote}
+                            onApprove={handleApprove}
+                            onRemove={handleRemove}
+                            confidence={calculateConfidence(
+                                selectedIssue.votes_true,
+                                selectedIssue.votes_false,
+                                selectedIssue.approved
                             )}
+                        />
+                    </div>
+                </div>
+            )}
 
-                            {selectedIssue.images && selectedIssue.images.length > 0 && (
-                                <div className="menu-section">
-                                    <div className="menu-label">EVIDENCE</div>
-                                    <div className="evidence-box">
-                                        {selectedIssue.images.map((img, idx) => (
-                                            <div key={idx} style={{ position: 'relative', width: '100%' }}>
-                                                <img
-                                                    key={idx}
-                                                    src={img}
-                                                    alt={`Evidence ${idx + 1}`}
-                                                    className="mobile-evidence-img"
-                                                    style={{ marginBottom: '0.5rem' }}
-                                                    onError={(e) => {
-                                                        const target = e.target as HTMLImageElement;
-                                                        target.style.display = 'none';
-                                                        if (target.nextSibling) {
-                                                            (target.nextSibling as HTMLElement).style.display = 'flex';
-                                                        }
-                                                    }}
-                                                />
-                                                <div style={{
-                                                    display: 'none',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    padding: '2rem',
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    border: '1px solid var(--border-light)',
-                                                    borderRadius: '12px',
-                                                    color: 'var(--text-muted)',
-                                                    fontSize: '0.9rem',
-                                                    textAlign: 'center',
-                                                    gap: '0.5rem',
-                                                    marginBottom: '0.5rem'
-                                                }}>
-                                                    <ExternalLink size={24} />
-                                                    <div>Evidence image failed to load</div>
-                                                    <a href={img} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-                                                        Open Evidence Source
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="sidebar-footer">
-                            {isAdmin ? (
-                                <div className="vote-pill-container" style={{ width: '100%' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', minHeight: '48px', padding: '0 10px' }}>
-                                        <button
-                                            className="vote-pill-btn active-btn"
-                                            style={{
-                                                background: selectedIssue.approved ? '#6b7280' : '#10b981',
-                                                color: 'white',
-                                                cursor: selectedIssue.approved ? 'not-allowed' : 'pointer',
-                                                opacity: selectedIssue.approved ? 0.7 : 1
-                                            }}
-                                            onClick={() => selectedIssue.id && !selectedIssue.approved && handleApprove(selectedIssue.id)}
-                                            disabled={selectedIssue.approved}
-                                        >
-                                            <Check size={18} />
-                                            <span>{selectedIssue.approved ? 'APPROVED' : 'APPROVE'}</span>
-                                        </button>
-                                        <button
-                                            className="vote-pill-btn fixed-btn"
-                                            style={{ background: '#ef4444', color: 'white' }}
-                                            onClick={() => selectedIssue.id && handleRemove(selectedIssue.id)}
-                                        >
-                                            <Trash size={18} />
-                                            <span>REMOVE</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="vote-pill-container">
-                                    <div className="vote-pill">
-                                        <button
-                                            className="vote-pill-btn active-btn"
-                                            onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'true')}
-                                        >
-                                            <XCircle size={18} />
-                                            <span>ACTIVE</span>
-                                        </button>
-                                        <div className="vote-pill-separator"></div>
-                                        <button
-                                            className="vote-pill-btn fixed-btn"
-                                            onClick={() => selectedIssue.id && handleVote(selectedIssue.id, 'false')}
-                                        >
-                                            <CheckCircle size={18} />
-                                            <span>FIXED</span>
-                                        </button>
-                                    </div>
-
-                                    {/* Confidence Percentage */}
-                                    <div className="desktop-confidence-display">
-                                        {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}%
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
-
-                {/* Consolidated Report Form */}
-                {reportStep === 'form' && (
-                    <>
-                        <button className="close-btn" onClick={() => setReportStep(null)} style={{ top: '1.65rem' }}>
-                            <X size={18} />
-                        </button>
-
-                        <div className="detail-header">
-                            <h2 className="detail-title">Report Issue</h2>
-                            <div className="detail-subtitle">Fill in the details to report an issue</div>
-                        </div>
-
-                        <div className="sidebar-scroll-content">
-                            {/* Issue Type Selection */}
-                            <div className="menu-section">
-                                <div className="menu-label">ISSUE TYPE</div>
-                                <div className="filter-group">
-                                    {[
-                                        { id: 'pothole', label: 'Pothole', icon: <AlertCircle size={20} />, color: '#fbbf24' },
-                                        { id: 'water_logging', label: 'Water', icon: <Droplets size={20} />, color: '#3b82f6' },
-                                        { id: 'garbage_dump', label: 'Garbage', icon: <Trash2 size={20} />, color: '#ef4444' }
-                                    ].map(t => (
-                                        <div
-                                            key={t.id}
-                                            className={`checkbox-label ${reportForm.type === t.id ? 'selected' : ''}`}
-                                            onClick={() => {
-                                                setReportForm(prev => ({ ...prev, type: t.id as IssueType }));
-                                            }}
-                                            style={{
-                                                background: reportForm.type === t.id ? `${t.color}20` : undefined,
-                                                borderColor: reportForm.type === t.id ? t.color : undefined
-                                            }}
-                                        >
-                                            <div style={{ color: t.color }}>{t.icon}</div>
-                                            <div style={{ fontWeight: 600 }}>{t.label}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Magnitude Selection */}
-                            <div className="menu-section">
-                                <div className="menu-label">MAGNITUDE</div>
-                                <div className="magnitude-group">
-                                    {[
-                                        { value: 3, label: 'Low Impact' },
-                                        { value: 5, label: 'Moderate' },
-                                        { value: 10, label: 'High Impact' }
-                                    ].map((m) => (
-                                        <button
-                                            key={m.value}
-                                            className={`magnitude-btn ${reportForm.magnitude === m.value ? 'selected' : ''}`}
-                                            data-value={m.value}
-                                            onClick={() => setReportForm(prev => ({ ...prev, magnitude: m.value }))}
-                                        >
-                                            {m.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Location Selection */}
-                            <div className="menu-section">
-                                <div className="menu-label">LOCATION</div>
-                                <div
-                                    style={{
-                                        background: 'rgba(255, 255, 255, 0.03)',
-                                        border: '1px solid var(--border-light)',
-                                        borderRadius: '12px',
-                                        padding: '1rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.75rem',
-                                        cursor: 'pointer'
-                                    }}
-                                    onClick={() => { }}
-                                >
-                                    <div style={{
-                                        width: '40px',
-                                        height: '40px',
-                                        background: reportForm.location ? 'rgba(34, 211, 238, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                                        borderRadius: '8px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: reportForm.location ? 'var(--accent)' : 'var(--text-muted)'
-                                    }}>
-                                        <Navigation size={20} />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                                            {reportForm.location ? 'Location Selected' : 'Click on Map'}
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
-                                            {reportForm.location
-                                                ? `${reportForm.location[0].toFixed(4)}, ${reportForm.location[1].toFixed(4)} (drag marker to adjust)`
-                                                : 'Select location by clicking on the map'
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Description */}
-                            <div className="menu-section">
-                                <div className="menu-label">DESCRIPTION</div>
-                                <textarea
-                                    className="note-bubble"
-                                    style={{
-                                        width: '100%',
-                                        height: '100px',
-                                        border: '1px solid var(--border-light)',
-                                        resize: 'none',
-                                        padding: '1rem',
-                                        fontStyle: 'normal',
-                                        background: 'rgba(255, 255, 255, 0.05)',
-                                        borderRadius: '12px',
-                                        fontSize: '0.9rem'
-                                    }}
-                                    placeholder="Describe the severity or specific details..."
-                                    value={reportForm.note}
-                                    onChange={e => setReportForm(prev => ({ ...prev, note: e.target.value }))}
-                                />
-                            </div>
-
-                            {/* Evidence */}
-                            <div className="menu-section">
-                                <div className="menu-label">EVIDENCE</div>
-                                <input
-                                    type="text"
-                                    className="note-bubble"
-                                    style={{
-                                        width: '100%',
-                                        height: '52px',
-                                        border: '1px solid var(--border-light)',
-                                        padding: '1rem',
-                                        background: 'rgba(255, 255, 255, 0.05)',
-                                        borderRadius: '12px',
-                                        color: 'white',
-                                        fontFamily: 'inherit',
-                                        fontSize: '0.9rem',
-                                        marginBottom: '0.5rem'
-                                    }}
-                                    placeholder="Paste image URL here..."
-                                    value={reportForm.imageUrl}
-                                    onChange={(e) => setReportForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                                />
-                                {reportForm.imageUrl && (
-                                    <div className="evidence-preview-container">
-                                        <img
-                                            src={reportForm.imageUrl}
-                                            alt="Preview"
-                                            className="evidence-preview-img"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                            }}
-                                            onLoad={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'block';
-                                            }}
-                                        />
-                                        <button
-                                            className="preview-remove-btn"
-                                            onClick={() => setReportForm(prev => ({ ...prev, imageUrl: '' }))}
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="sidebar-footer">
-                            <button
-                                type="button"
-                                className="btn-resolve-premium"
-                                onClick={handleReport}
-                                disabled={!reportForm.location}
-                                style={{
-                                    background: reportForm.location ? 'var(--accent)' : 'rgba(128, 128, 128, 0.3)',
-                                    color: reportForm.location ? '#000' : '#666',
-                                    cursor: reportForm.location ? 'pointer' : 'not-allowed'
-                                }}
-                            >
-                                Submit Report <ChevronRight size={18} />
-                            </button>
-                        </div>
-                    </>
-                )}
-            </div>
-        </div >
+            {/* Desktop Sidebar - Report Form */}
+            {!isMobile && reportStep === 'form' && (
+                <div className="detail-sidebar report-sidebar open">
+                    <ReportForm
+                        formData={reportForm}
+                        onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
+                        onSubmit={handleReport}
+                        onCancel={handleCancelReport}
+                        onGetLocation={handleGetCurrentLocation}
+                        isMobile={isMobile}
+                        uploadProgress={uploadProgress}
+                        isSubmitting={isSubmitting}
+                    />
+                </div>
+            )}
+        </div>
     );
 };
 

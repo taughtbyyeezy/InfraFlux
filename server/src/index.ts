@@ -21,6 +21,18 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Rate limiting: 10 reports per hour per IP
+const reportLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10,
+    message: { error: 'Too many reports from this IP, please try again after an hour' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply limiter only to the report endpoint if possible, or globally for simple protection
+app.use('/api/report', reportLimiter);
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

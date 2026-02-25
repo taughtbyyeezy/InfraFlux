@@ -3,10 +3,13 @@ import { InfrastructureIssue } from '../types';
 import { Check, CheckCircle, MapPin, Clock, ArrowLeft, AlertCircle, Activity } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
+import { AdminListSkeleton } from '../components/Skeleton';
 
 type Tab = 'pending' | 'active' | 'resolved';
 
 const AdminDashboard = () => {
+    const { addToast } = useToast();
     const [issues, setIssues] = useState<InfrastructureIssue[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>('pending');
@@ -40,13 +43,14 @@ const AdminDashboard = () => {
             });
             if (response.ok) {
                 fetchIssues();
+                addToast('Issue approved successfully', 'success');
             } else {
                 const error = await response.json().catch(() => ({}));
-                alert(`Approve failed: ${error.error || 'Server error'}`);
+                addToast(`Approve failed: ${error.error || 'Server error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to approve:', error);
-            alert(`Network error: ${error instanceof Error ? error.message : 'Failed to fetch'}`);
+            addToast(`Network error: ${error instanceof Error ? error.message : 'Failed to fetch'}`, 'error');
         }
     };
 
@@ -63,13 +67,14 @@ const AdminDashboard = () => {
             });
             if (response.ok) {
                 fetchIssues();
+                addToast('Issue resolved successfully', 'success');
             } else {
                 const error = await response.json().catch(() => ({}));
-                alert(`Resolve failed: ${error.error || 'Server error'}`);
+                addToast(`Resolve failed: ${error.error || 'Server error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to resolve:', error);
-            alert(`Network error: ${error instanceof Error ? error.message : 'Failed to fetch'}`);
+            addToast(`Network error: ${error instanceof Error ? error.message : 'Failed to fetch'}`, 'error');
         }
     };
 
@@ -149,7 +154,7 @@ const AdminDashboard = () => {
             {/* List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
                 {isLoading ? (
-                    <p>Loading...</p>
+                    <AdminListSkeleton count={5} />
                 ) : currentList.length === 0 ? (
                     <div style={{ padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', color: '#9ca3af' }}>
                         No issues in this category.

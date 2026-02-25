@@ -10,7 +10,9 @@ const IssueReportSchema = z.object({
     status: z.enum(['active', 'in_progress', 'resolved']).optional(),
     note: z.string().max(500).optional(),
     imageUrl: z.string().url().or(z.literal('')).optional(),
-    magnitude: z.number().int().min(1).max(10).optional()
+    magnitude: z.number().int().min(1).max(10).optional(),
+    honeypot: z.string().max(0).optional(), // Must be empty
+    userLocation: z.tuple([z.number(), z.number()]).optional() // Real GPS location
 });
 
 const VoteSchema = z.object({
@@ -51,6 +53,19 @@ interface IssueRow {
     images: string[];
     note: string;
 }
+
+// Haversine formula to calculate distance in km
+const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
 
 // GET /api/map-state?timestamp=XYZ
 router.get('/map-state', async (req: Request, res: Response) => {
@@ -120,8 +135,23 @@ router.post('/report', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Invalid report data', details: validation.error.format() });
     }
 
-    const { type, location, reportedBy, status, note, imageUrl, magnitude } = validation.data;
+    const { type, location, reportedBy, status, note, imageUrl, magnitude, honeypot, userLocation } = validation.data;
+
+    // 1. Honeypot check
+    if (honeypot) {
+        return res.status(400).json({ error: 'Bot detected' });
+    }
+
+    // 2. Geofencing check (if user provided GPS)
     const [lat, lng] = location;
+    if (userLocation) {
+        const distance = getDistance(userLocation[0], userLocation[1], lat, lng);
+        if (distance > 5) { // 5km threshold
+            return res.status(400).json({
+                error: 'Geofencing failed: Report location is too far from your current GPS position.'
+            });
+        }
+    }
 
     try {
         // Start transaction

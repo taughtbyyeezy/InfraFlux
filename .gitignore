@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 .npm/
+server/node_modules/
 
 # Build outputs
 dist/
@@ -11,6 +12,7 @@ build/
 .env
 .env.local
 .env.*.local
+server/.env
 
 # IDE / System
 .vscode/
@@ -22,8 +24,13 @@ build/
 .antigravity/
 .gemini/
 .agent/
+.system_generated/
+brain/
 PROJECT_STRUCTURE.md
 SETUP_GUIDE.md
+PROJECT_CONTEXT.md
+bottom-sheet-context.md
+*.md.tmp
 
 # Local markers
 not-env
