@@ -45,7 +45,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         const saved = localStorage.getItem('theme') as 'light' | 'dark';
         if (saved) return saved;
-        return window.innerWidth <= 767 ? 'light' : 'dark';
+        return window.innerWidth < 768 ? 'light' : 'dark';
     });
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isMobileReportOpen, setIsMobileReportOpen] = useState(false);
