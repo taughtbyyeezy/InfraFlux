@@ -99,6 +99,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const [hasInitialCentered, setHasInitialCentered] = useState(false);
+
     // Fetch map data
     const fetchMapState = async (time: Date) => {
         setIsLoading(true);
@@ -106,6 +108,13 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             const response = await fetch(`${baseUrl}/api/map-state?timestamp=${time.toISOString()}`);
             const data = await response.json();
             setIssues(Array.isArray(data.issues) ? data.issues : []);
+
+            // Handle IP-based initial centering
+            if (!hasInitialCentered && data.userDefaultLocation && map) {
+                const [lat, lng] = data.userDefaultLocation;
+                map.setView([lat, lng], 13); // Zoom out slightly for city-level view
+                setHasInitialCentered(true);
+            }
         } catch (error) {
             console.error('Failed to fetch map state:', error);
             addToast('Failed to fetch map data', 'error');

@@ -115,9 +115,25 @@ router.get('/map-state', async (req: Request, res: Response) => {
             images: row.images
         }));
 
+        // Infrastructure IP-based geolocation approximation
+        // Vercel: x-vercel-ip-latitude, x-vercel-ip-longitude
+        // Render: x-render-lat, x-render-lon
+        const ipLat = req.headers['x-vercel-ip-latitude'] || req.headers['x-render-lat'];
+        const ipLng = req.headers['x-vercel-ip-longitude'] || req.headers['x-render-lon'];
+
+        let userDefaultLocation = null;
+        if (ipLat && ipLng) {
+            const lat = parseFloat(ipLat as string);
+            const lng = parseFloat(ipLng as string);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                userDefaultLocation = [lat, lng];
+            }
+        }
+
         res.json({
             timestamp: targetTime.toISOString(),
-            issues
+            issues,
+            userDefaultLocation
         });
     } catch (err: any) {
         console.error(err);
