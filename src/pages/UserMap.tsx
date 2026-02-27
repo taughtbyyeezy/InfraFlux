@@ -24,6 +24,8 @@ import {
     AdminLoginOverlay,
     ReportForm
 } from '../components';
+import { DonateModal } from '../components/ui/DonateModal';
+
 
 const sector18Center: [number, number] = [28.1711, 76.6211];
 
@@ -68,6 +70,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     });
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
+
 
     const baseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
 
@@ -554,11 +558,21 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             {isMobile && (
                 <MobileHeader
                     theme={theme}
-                    isMenuOpen={isMobileMenuOpen}
-                    onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    isMenuOpen={isMobileMenuOpen && !isDonateModalOpen}
+                    onMenuToggle={() => {
+                        if (isDonateModalOpen) {
+                            setIsDonateModalOpen(false);
+                        }
+                        setIsMobileMenuOpen(!isMobileMenuOpen);
+                    }}
                     selectedTypes={selectedTypes}
                     onToggleType={toggleType}
                     onThemeToggle={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+                    onDonateClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsDonateModalOpen(true);
+                    }}
+                    isHidden={isDonateModalOpen}
                 />
             )}
 
@@ -569,6 +583,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     zoom={zoom}
                     scrollWheelZoom={true}
                     zoomControl={false}
+                    maxZoom={18}
                     style={{ height: '100%', width: '100%' }}
                 >
                     <TileLayer
@@ -582,7 +597,22 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     <MapRegister setMap={setMap} />
                     <MapClickHandler
                         onMapClick={(loc) => {
-                            if (reportStep === 'form' || isMobileReportOpen) {
+                            if (isMobile) {
+                                hapticButton();
+                                setSelectedIssue(null);
+                                setReportStep(null);
+                                setIsMobileReportOpen(true);
+                                setReportForm({
+                                    type: 'pothole',
+                                    note: '',
+                                    imageUrl: '',
+                                    imageFile: null,
+                                    location: loc,
+                                    magnitude: 5,
+                                    honeypot: '',
+                                    userLocation: null
+                                });
+                            } else if (reportStep === 'form' || isMobileReportOpen) {
                                 setReportForm(prev => ({ ...prev, location: loc }));
                             }
                         }}
@@ -622,67 +652,139 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             </div>
 
             {/* Mobile Bottom Bar */}
-            {(!selectedIssue && !reportStep && !isMobileReportOpen) && (
-                <div className="mobile-bottom-bar">
-                    <button
-                        type="button"
-                        className="mobile-report-btn"
-                        onClick={() => {
-                            hapticButton();
-                            setSelectedIssue(null);
-                            setReportStep(null);
-                            setIsMobileReportOpen(true);
-                            setReportForm({
-                                type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
-                            });
-                        }}
-                    >
-                        <PlusCircle size={18} />
-                        <span>REPORT ISSUE</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="mobile-locate-btn"
-                        onClick={() => {
-                            hapticButton();
-                            handleLocateMe();
-                        }}
-                        aria-label="Locate me"
-                    >
-                        <Navigation size={18} />
-                    </button>
-                </div>
-            )}
+            {
+                (!selectedIssue && !reportStep && !isMobileReportOpen) && (
+                    <div className={`mobile-bottom-bar ${isDonateModalOpen ? 'hidden-for-support' : ''}`}>
+                        <button
+                            type="button"
+                            className="mobile-report-btn"
+                            onClick={() => {
+                                hapticButton();
+                                setSelectedIssue(null);
+                                setReportStep(null);
+                                setIsMobileReportOpen(true);
+                                setReportForm({
+                                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
+                                });
+                            }}
+                        >
+                            <PlusCircle size={18} />
+                            <span>REPORT ISSUE</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="mobile-locate-btn"
+                            onClick={() => {
+                                hapticButton();
+                                handleLocateMe();
+                            }}
+                            aria-label="Locate me"
+                        >
+                            <Navigation size={18} />
+                        </button>
+                    </div>
+                )
+            }
 
             {/* Mobile Issue Details Panel */}
-            {isMobile && selectedIssue && !reportStep && (
-                <MobileBottomPanel
-                    onClose={() => setSelectedIssue(null)}
-                    height={0.5}
-                    modal={true}
-                >
-                    <div className="mobile-issue-details">
-                        <div className="mobile-detail-header">
-                            <h2 className="mobile-detail-title">
+            {
+                isMobile && selectedIssue && !reportStep && (
+                    <MobileBottomPanel
+                        onClose={() => setSelectedIssue(null)}
+                        height={0.5}
+                        modal={true}
+                    >
+                        <div className="mobile-issue-details">
+                            <div className="mobile-detail-header">
+                                <h2 className="mobile-detail-title">
+                                    {selectedIssue.type === 'water_logging' ? 'Water Logging' :
+                                        selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' :
+                                            selectedIssue.type === 'pothole' ? 'Pothole' :
+                                                String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
+                                </h2>
+                                <div className="mobile-confidence-badge">
+                                    {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}%
+                                    <span className="confidence-text">Confidence</span>
+                                </div>
+                            </div>
+
+                            <IssueDetails
+                                issue={selectedIssue!}
+                                magnitudeLabel={magnitudeLabel}
+                            />
+
+                            <div className="mobile-detail-footer">
+                                <VoteButtons
+                                    issue={selectedIssue!}
+                                    isAdmin={isAdmin}
+                                    isVoting={votingIssueId === selectedIssue.id}
+                                    votingType={votingType}
+                                    onVote={handleVote}
+                                    onApprove={handleApprove}
+                                    onRemove={handleRemove}
+                                    confidence={calculateConfidence(
+                                        selectedIssue.votes_true,
+                                        selectedIssue.votes_false,
+                                        selectedIssue.approved
+                                    )}
+                                />
+                            </div>
+                        </div>
+                    </MobileBottomPanel>
+                )
+            }
+
+            {/* Mobile Report Form Panel */}
+            {
+                isMobileReportOpen && (
+                    <MobileBottomPanel
+                        onClose={handleCancelReport}
+                        height={0.5}
+                        modal={false}
+                    >
+                        <ReportForm
+                            formData={reportForm}
+                            onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
+                            onSubmit={handleReport}
+                            onCancel={handleCancelReport}
+                            onGetLocation={handleGetCurrentLocation}
+                            isMobile={isMobile}
+                            uploadProgress={uploadProgress}
+                            isSubmitting={isSubmitting}
+                        />
+                    </MobileBottomPanel>
+                )
+            }
+
+            {/* Desktop Sidebar - Issue Details */}
+            {
+                !isMobile && selectedIssue && !reportStep && (
+                    <div className="detail-sidebar open">
+                        <button className="detail-close-btn" onClick={() => setSelectedIssue(null)}>
+                            <div className="hamburger-line"></div>
+                            <div className="hamburger-line"></div>
+                            <div className="hamburger-line"></div>
+                        </button>
+
+                        <div className="detail-header">
+                            <h2 className="detail-title">
                                 {selectedIssue.type === 'water_logging' ? 'Water Logging' :
                                     selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' :
                                         selectedIssue.type === 'pothole' ? 'Pothole' :
                                             String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
                             </h2>
-                            <div className="mobile-confidence-badge">
-                                {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}%
-                                <span className="confidence-text">Confidence</span>
-                            </div>
                         </div>
 
-                        <IssueDetails
-                            issue={selectedIssue}
-                            magnitudeLabel={magnitudeLabel}
-                        />
+                        <div className="detail-content">
+                            <IssueDetails
+                                issue={selectedIssue!}
+                                magnitudeLabel={magnitudeLabel}
+                            />
+                        </div>
 
-                        <div className="mobile-detail-footer">
+                        <div className="detail-footer">
                             <VoteButtons
-                                issue={selectedIssue}
+                                issue={selectedIssue!}
                                 isAdmin={isAdmin}
                                 isVoting={votingIssueId === selectedIssue.id}
                                 votingType={votingType}
@@ -697,90 +799,34 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                             />
                         </div>
                     </div>
-                </MobileBottomPanel>
-            )}
-
-            {/* Mobile Report Form Panel */}
-            {isMobileReportOpen && (
-                <MobileBottomPanel
-                    onClose={handleCancelReport}
-                    height={0.5}
-                    modal={false}
-                >
-                    <ReportForm
-                        formData={reportForm}
-                        onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
-                        onSubmit={handleReport}
-                        onCancel={handleCancelReport}
-                        onGetLocation={handleGetCurrentLocation}
-                        isMobile={isMobile}
-                        uploadProgress={uploadProgress}
-                        isSubmitting={isSubmitting}
-                    />
-                </MobileBottomPanel>
-            )}
-
-            {/* Desktop Sidebar - Issue Details */}
-            {!isMobile && selectedIssue && !reportStep && (
-                <div className="detail-sidebar open">
-                    <button className="detail-close-btn" onClick={() => setSelectedIssue(null)}>
-                        <div className="hamburger-line"></div>
-                        <div className="hamburger-line"></div>
-                        <div className="hamburger-line"></div>
-                    </button>
-
-                    <div className="detail-header">
-                        <h2 className="detail-title">
-                            {selectedIssue.type === 'water_logging' ? 'Water Logging' :
-                                selectedIssue.type === 'garbage_dump' ? 'Garbage Dump' :
-                                    selectedIssue.type === 'pothole' ? 'Pothole' :
-                                        String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
-                        </h2>
-                    </div>
-
-                    <div className="detail-content">
-                        <IssueDetails
-                            issue={selectedIssue}
-                            magnitudeLabel={magnitudeLabel}
-                        />
-                    </div>
-
-                    <div className="detail-footer">
-                        <VoteButtons
-                            issue={selectedIssue}
-                            isAdmin={isAdmin}
-                            isVoting={votingIssueId === selectedIssue.id}
-                            votingType={votingType}
-                            onVote={handleVote}
-                            onApprove={handleApprove}
-                            onRemove={handleRemove}
-                            confidence={calculateConfidence(
-                                selectedIssue.votes_true,
-                                selectedIssue.votes_false,
-                                selectedIssue.approved
-                            )}
-                        />
-                    </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Desktop Sidebar - Report Form */}
-            {!isMobile && reportStep === 'form' && (
-                <div className="detail-sidebar report-sidebar open">
-                    <ReportForm
-                        formData={reportForm}
-                        onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
-                        onSubmit={handleReport}
-                        onCancel={handleCancelReport}
-                        onGetLocation={handleGetCurrentLocation}
-                        isMobile={isMobile}
-                        uploadProgress={uploadProgress}
-                        isSubmitting={isSubmitting}
-                    />
-                </div>
-            )}
+            {
+                !isMobile && reportStep === 'form' && (
+                    <div className="detail-sidebar report-sidebar open">
+                        <ReportForm
+                            formData={reportForm}
+                            onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
+                            onSubmit={handleReport}
+                            onCancel={handleCancelReport}
+                            onGetLocation={handleGetCurrentLocation}
+                            isMobile={isMobile}
+                            uploadProgress={uploadProgress}
+                            isSubmitting={isSubmitting}
+                        />
+                    </div>
+                )
+            }
+            {/* Donation Modal */}
+            <DonateModal
+                isOpen={isDonateModalOpen}
+                onClose={() => setIsDonateModalOpen(false)}
+            />
         </div>
     );
 };
+
 
 export default UserMap;
