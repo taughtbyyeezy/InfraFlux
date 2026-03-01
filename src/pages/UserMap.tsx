@@ -287,7 +287,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleVote = async (id: string, voteType: 'true' | 'false') => {
         const issue = issues.find(i => i.id === id);
-        const clusteredIssue = filteredIssues.find(i => i.id === id);
+        const clusteredIssue = clusteredMarkers.find(i => i.id === id);
         const targetId = clusteredIssue?.originalId || issue?.id || id;
 
         setVotingIssueId(id);
@@ -336,7 +336,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleApprove = async (id: string) => {
         const issue = issues.find(i => i.id === id);
-        const clusteredIssue = filteredIssues.find(i => i.id === id);
+        const clusteredIssue = clusteredMarkers.find(i => i.id === id);
         const targetId = clusteredIssue?.originalId || issue?.id || id;
 
         try {
@@ -368,7 +368,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleRemove = async (id: string) => {
         const issue = issues.find(i => i.id === id);
-        const clusteredIssue = filteredIssues.find(i => i.id === id);
+        const clusteredIssue = clusteredMarkers.find(i => i.id === id);
         const targetId = clusteredIssue?.originalId || issue?.id || id;
 
         try {
