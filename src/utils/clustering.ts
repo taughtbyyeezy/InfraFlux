@@ -52,6 +52,7 @@ export const clusterIssues = (issues: InfrastructureIssue[]): InfrastructureIssu
                 clustered.push({
                     ...center,
                     id: `cluster_${type}_${center.id}`,
+                    originalId: center.id,
                     location: [avgLat, avgLng],
                     magnitude: newMag,
                     status: cluster.some(i => i.status === 'active') ? 'active' : center.status,

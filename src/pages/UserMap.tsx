@@ -276,11 +276,15 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     };
 
     const handleVote = async (id: string, voteType: 'true' | 'false') => {
+        const issue = issues.find(i => i.id === id);
+        const clusteredIssue = filteredIssues.find(i => i.id === id);
+        const targetId = clusteredIssue?.originalId || issue?.id || id;
+
         setVotingIssueId(id);
         setVotingType(voteType);
 
         try {
-            const response = await fetch(`${baseUrl}/api/issue/${id}/vote`, {
+            const response = await fetch(`${baseUrl}/api/issue/${targetId}/vote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ vote: voteType, voterId: getVoterId() })
@@ -321,9 +325,13 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     };
 
     const handleApprove = async (id: string) => {
+        const issue = issues.find(i => i.id === id);
+        const clusteredIssue = filteredIssues.find(i => i.id === id);
+        const targetId = clusteredIssue?.originalId || issue?.id || id;
+
         try {
             const secretToUse = adminPassword || import.meta.env.VITE_ADMIN_SECRET || 'admin';
-            const response = await fetch(`${baseUrl}/api/issue/${id}/approve`, {
+            const response = await fetch(`${baseUrl}/api/issue/${targetId}/approve`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -349,9 +357,13 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     };
 
     const handleRemove = async (id: string) => {
+        const issue = issues.find(i => i.id === id);
+        const clusteredIssue = filteredIssues.find(i => i.id === id);
+        const targetId = clusteredIssue?.originalId || issue?.id || id;
+
         try {
             const secretToUse = adminPassword || import.meta.env.VITE_ADMIN_SECRET || 'admin';
-            const response = await fetch(`${baseUrl}/api/issue/${id}/delist`, {
+            const response = await fetch(`${baseUrl}/api/issue/${targetId}/delist`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -21,6 +21,7 @@ export interface InfrastructureIssue {
     resolve_votes?: number;
     magnitude?: number;
     note?: string;
+    originalId?: string;
 }
 
 export interface HistoricalSnapshot {
