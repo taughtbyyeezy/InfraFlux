@@ -621,7 +621,21 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     <ZoomHandler onZoomChange={setZoom} />
                     <MapRegister setMap={setMap} />
                     <MapClickHandler
-                        onMapClick={(loc) => {
+                        onMapClick={(loc, point) => {
+                            if (!map) return;
+
+                            // Proximity Guard: Check if click is too close to an existing marker (40px)
+                            const isNearMarker = clusteredMarkers.some(issue => {
+                                const markerPoint = map.latLngToContainerPoint(issue.location);
+                                const distance = Math.sqrt(
+                                    Math.pow(point.x - markerPoint.x, 2) +
+                                    Math.pow(point.y - markerPoint.y, 2)
+                                );
+                                return distance < 40;
+                            });
+
+                            if (isNearMarker) return;
+
                             if (isMobile) {
                                 hapticButton();
                                 setSelectedIssue(null);
