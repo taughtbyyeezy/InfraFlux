@@ -120,7 +120,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                     onClick={handleButtonClick}
                     className="report-btn-highlight w-full"
                 >
-                    <ArrowUp size={20} /> UPLOAD PHOTO EVIDENCE
+                    <ArrowUp size={20} /> TAKE PHOTO EVIDENCE
                 </button>
             )}
 
@@ -199,6 +199,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 accept="image/*"
+                capture="environment"
                 style={{ display: 'none' }}
                 tabIndex={-1}
             />
