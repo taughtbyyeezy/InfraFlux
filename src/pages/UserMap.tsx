@@ -132,9 +132,13 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     }, [currentTime]);
 
     const getGeoErrorMessage = (error: GeolocationPositionError) => {
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
         switch (error.code) {
             case error.PERMISSION_DENIED:
-                return "Permission denied. Please enable location services in your browser/system settings.";
+                return isSafari
+                    ? "Permission denied. On Safari, you may also need to allow Location in System Settings > Privacy > Location Services."
+                    : "Permission denied. Please enable location services in your browser/system settings.";
             case error.POSITION_UNAVAILABLE:
                 return "Position unavailable. Your device could not determine your location.";
             case error.TIMEOUT:
@@ -597,12 +601,15 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     zoomControl={false}
                     maxZoom={18}
                     style={{ height: '100%', width: '100%' }}
+                    preferCanvas={true}
                 >
                     <TileLayer
                         url={theme === 'dark'
                             ? "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
                             : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                         }
+                        keepBuffer={2}
+                        updateWhenIdle={isMobile}
                     />
                     <MapUpdater center={sector18Center} />
                     <ZoomHandler onZoomChange={setZoom} />

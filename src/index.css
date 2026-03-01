@@ -123,7 +123,7 @@
 }
 
 .dark-theme .leaflet-container {
-  filter: brightness(1.15) contrast(0.95);
+  filter: brightness(1.2) contrast(0.85);
 }
 
 /* Desktop Logic: Apply Dark Theme by default IF no manual class is set */
