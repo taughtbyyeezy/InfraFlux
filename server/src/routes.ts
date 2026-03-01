@@ -3,6 +3,10 @@ import { query } from './db';
 import { z } from 'zod';
 
 // Validation Schemas
+const sanitizeHTML = (str: string): string => {
+    return str.replace(/<[^>]*>?/gm, ''); // Basic regex to strip tags
+};
+
 const IssueReportSchema = z.object({
     type: z.enum(['pothole', 'water_logging', 'garbage_dump']),
     location: z.tuple([z.number(), z.number()]),
@@ -151,7 +155,8 @@ router.post('/report', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Invalid report data', details: validation.error.format() });
     }
 
-    const { type, location, reportedBy, status, note, imageUrl, magnitude, honeypot, userLocation } = validation.data;
+    const { type, location, reportedBy, status, note: rawNote, imageUrl, magnitude, honeypot, userLocation } = validation.data;
+    const note = rawNote ? sanitizeHTML(rawNote) : undefined;
 
     // 1. Honeypot check
     if (honeypot) {

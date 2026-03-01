@@ -12,7 +12,20 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // Basic security headers
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"], // unsafe-inline needed for some dev tools, but ideally restricted
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            imgSrc: ["'self'", "data:", "https://*.basemaps.cartocdn.com", "https://i.ibb.co", "https://raw.githubusercontent.com"],
+            connectSrc: ["'self'", "https://api.imgbb.com", "http://localhost:3001", "https://*.basemaps.cartocdn.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: [],
+        },
+    },
+}));
 
 app.use(cors({
     origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
