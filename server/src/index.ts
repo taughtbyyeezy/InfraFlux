@@ -18,7 +18,7 @@ app.use(helmet({
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'"], // unsafe-inline needed for some dev tools, but ideally restricted
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            imgSrc: ["'self'", "data:", "https://*.basemaps.cartocdn.com", "https://i.ibb.co", "https://raw.githubusercontent.com"],
+            imgSrc: ["'self'", "data:", "https://*.basemaps.cartocdn.com", "https://*.ibb.co", "https://raw.githubusercontent.com"],
             connectSrc: ["'self'", "https://api.imgbb.com", "http://localhost:3001", "https://*.basemaps.cartocdn.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             objectSrc: ["'none'"],

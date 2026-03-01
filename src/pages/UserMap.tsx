@@ -209,7 +209,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 finalImageUrl = await new Promise<string>((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
                     const formData = new FormData();
-                    formData.append('image', reportForm.imageFile!);
+                    formData.append('image', reportForm.imageFile!, `report_${Date.now()}.jpg`);
 
                     xhr.upload.addEventListener('progress', (event) => {
                         if (event.lengthComputable) {
