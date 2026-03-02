@@ -6,6 +6,7 @@ interface FilterSidebarProps {
     selectedTypes: string[];
     onToggleType: (type: string) => void;
     onReportClick: () => void;
+    issueCounts?: Record<string, number>;
 }
 
 const filterTypes = [
@@ -18,7 +19,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     isOpen,
     selectedTypes,
     onToggleType,
-    onReportClick
+    onReportClick,
+    issueCounts = {}
 }) => {
     return (
         <div className={`side-menu ${isOpen ? 'open' : ''}`}>
@@ -40,8 +42,17 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                                     className="filter-dot"
                                     style={{
                                         background: selectedTypes.includes(type.id) ? type.color : undefined,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '10px',
+                                        fontWeight: 'bold',
+                                        width: '20px',
+                                        height: '20px'
                                     }}
-                                ></span>
+                                >
+                                    {issueCounts[type.id] || 0}
+                                </span>
                                 {type.label}
                             </div>
                         ))}

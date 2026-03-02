@@ -475,6 +475,14 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const clusteredMarkers = useMemo(() => clusterIssues(filteredIssues), [filteredIssues]);
 
+    // Calculate counts for each issue type
+    const issueCounts = useMemo(() => {
+        return issues.reduce((acc, issue) => {
+            acc[issue.type] = (acc[issue.type] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+    }, [issues]);
+
     const magnitudeLabel = (mag: number) => {
         if (mag <= 3) return 'Low';
         if (mag <= 7) return 'Moderate';
@@ -530,6 +538,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     setIsMobileReportOpen(false);
                     setReportStep('form');
                 }}
+                issueCounts={issueCounts}
             />
 
             {/* Fixed Logo for Desktop */}
@@ -595,6 +604,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         setIsDonateModalOpen(true);
                     }}
                     isHidden={isDonateModalOpen}
+                    issueCounts={issueCounts}
                 />
             )}
 

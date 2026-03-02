@@ -11,6 +11,7 @@ interface MobileHeaderProps {
     onThemeToggle: () => void;
     onDonateClick?: () => void;
     isHidden?: boolean;
+    issueCounts: Record<string, number>;
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
@@ -21,7 +22,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
     onToggleType,
     onThemeToggle,
     onDonateClick,
-    isHidden = false
+    isHidden = false,
+    issueCounts
 }) => {
     return (
         <>
@@ -64,7 +66,9 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                                     onToggleType('pothole');
                                 }}
                             >
-                                <div className="android-icon-box" style={{ background: '#ef4444' }}></div>
+                                <div className="android-icon-box" style={{ background: '#ef4444' }}>
+                                    {issueCounts['pothole'] || 0}
+                                </div>
                                 <span className="android-label">Potholes</span>
                             </div>
 
@@ -75,7 +79,9 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                                     onToggleType('garbage_dump');
                                 }}
                             >
-                                <div className="android-icon-box" style={{ background: '#fbbf24' }}></div>
+                                <div className="android-icon-box" style={{ background: '#fbbf24' }}>
+                                    {issueCounts['garbage_dump'] || 0}
+                                </div>
                                 <span className="android-label">Garbage Dump</span>
                             </div>
 
@@ -86,7 +92,9 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                                     onToggleType('water_logging');
                                 }}
                             >
-                                <div className="android-icon-box" style={{ background: '#3b82f6' }}></div>
+                                <div className="android-icon-box" style={{ background: '#3b82f6' }}>
+                                    {issueCounts['water_logging'] || 0}
+                                </div>
                                 <span className="android-label">Water Logging</span>
                             </div>
 
