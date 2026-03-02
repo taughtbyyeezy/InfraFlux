@@ -195,9 +195,9 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             return;
         }
 
-        // Mandatory photo for High Severity (Magnitude > 7)
-        if (reportForm.magnitude > 7 && !reportForm.imageFile) {
-            addToast('High severity reports require photo evidence. Please upload an photo or decrease severity.', 'error');
+        // Mandatory photo for Moderate and High Severity (Magnitude > 3)
+        if (reportForm.magnitude > 3 && !reportForm.imageFile) {
+            addToast('Moderate and high severity reports require photo evidence. Please upload a photo or decrease severity.', 'error');
             return;
         }
 

@@ -156,7 +156,7 @@ const DesktopReportForm: React.FC<ReportFormProps & { isUploading: boolean; setI
                 </div>
 
                 <div className="form-group">
-                    <label>PHOTO EVIDENCE (OPTIONAL)</label>
+                    <label>PHOTO EVIDENCE</label>
                     <ImageUpload
                         onCompressionComplete={(file) => {
                             onChange({ imageFile: file, imageUrl: URL.createObjectURL(file) });
@@ -317,7 +317,7 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
                 </div>
 
                 <div className="form-group">
-                    <label>PHOTO EVIDENCE (OPTIONAL)</label>
+                    <label>PHOTO EVIDENCE</label>
                     <ImageUpload
                         onCompressionComplete={(file) => {
                             onChange({ imageFile: file, imageUrl: URL.createObjectURL(file) });
