@@ -39,20 +39,14 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                                 onClick={() => onToggleType(type.id)}
                             >
                                 <span
-                                    className="filter-dot"
+                                    className="filter-count-box"
                                     style={{
-                                        background: selectedTypes.includes(type.id) ? type.color : undefined,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '10px',
-                                        fontWeight: 'bold',
-                                        width: '20px',
-                                        height: '20px'
+                                        background: selectedTypes.includes(type.id) ? type.color : undefined
                                     }}
                                 >
                                     {issueCounts[type.id] || 0}
                                 </span>
+
                                 {type.label}
                             </div>
                         ))}

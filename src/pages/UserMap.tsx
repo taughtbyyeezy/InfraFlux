@@ -470,7 +470,10 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const filteredIssues = useMemo(() => {
         if (!Array.isArray(issues)) return [];
-        return issues.filter(issue => selectedTypes.includes(issue.type));
+        return issues.filter(issue =>
+            selectedTypes.includes(issue.type) &&
+            issue.status !== 'resolved'
+        );
     }, [issues, selectedTypes]);
 
     const clusteredMarkers = useMemo(() => clusterIssues(filteredIssues), [filteredIssues]);
@@ -478,7 +481,9 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     // Calculate counts for each issue type
     const issueCounts = useMemo(() => {
         return issues.reduce((acc, issue) => {
-            acc[issue.type] = (acc[issue.type] || 0) + 1;
+            if (issue.status !== 'resolved') {
+                acc[issue.type] = (acc[issue.type] || 0) + 1;
+            }
             return acc;
         }, {} as Record<string, number>);
     }, [issues]);

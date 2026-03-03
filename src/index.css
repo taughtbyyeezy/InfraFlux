@@ -419,7 +419,7 @@ body {
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight), var(--filter-shadow);
   height: var(--item-height);
-  padding: 0 1.25rem;
+  padding: 0 1.25rem 0 9px;
   border-radius: var(--radius-standard);
   color: var(--filter-text) !important;
   font-size: 0.95rem;
@@ -451,21 +451,35 @@ body {
   background: rgba(56, 189, 248, 0.08) !important;
 }
 
-.filter-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: transparent;
-  border: 2px solid var(--text-dim);
+.filter-count-box {
+  width: 44px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
   flex-shrink: 0;
-  transition: all 0.2s;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.filter-item.active .filter-dot {
-  background: var(--accent);
-  border-color: var(--filter-dot-border);
-  box-shadow: var(--filter-dot-shadow);
+.filter-item:not(.active) .filter-count-box {
+  background: var(--glass-card) !important;
+  color: var(--text-dim);
+  border-color: var(--glass-border);
+  box-shadow: none;
+  opacity: 0.6;
 }
+
+.filter-item.active .filter-count-box {
+  box-shadow: 0 0 15px var(--accent-glow);
+  transform: scale(1.05);
+}
+
 
 /* Buttons */
 .report-btn-highlight {

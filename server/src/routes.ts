@@ -102,11 +102,8 @@ router.get('/map-state', async (req: Request, res: Response) => {
         LIMIT 1
       ) u ON true
       LEFT JOIN media m ON m.update_id = u.id
-      WHERE (
-        (i.type = 'pothole' AND i.created_at >= $1 - interval '2 years') OR
-        (i.type = 'water_logging' AND i.created_at >= $1 - interval '30 days') OR
-        (i.type = 'garbage_dump')
-      )
+      WHERE true
+
       GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note
     `;
 

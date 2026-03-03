@@ -19,7 +19,7 @@ export const ScalingMarkers: React.FC<ScalingMarkersProps> = ({
 }) => {
     return (
         <>
-            {issues.filter(issue => issue.status !== 'resolved').map((issue) => (
+            {issues.map((issue) => (
                 <Marker
                     key={issue.id}
                     position={issue.location}
