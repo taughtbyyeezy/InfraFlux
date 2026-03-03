@@ -26,11 +26,12 @@ server/.env
 .agent/
 .system_generated/
 brain/
-PROJECT_STRUCTURE.md
-SETUP_GUIDE.md
+system_design.md
+DEPLOYMENT.md
 PROJECT_CONTEXT.md
 bottom-sheet-context.md
 *.md.tmp
+
 
 # Local markers
 not-env
