@@ -168,7 +168,16 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             const { latitude, longitude } = position.coords;
             setReportForm(prev => ({ ...prev, location: [latitude, longitude] }));
             if (map) {
-                map.setView([latitude, longitude], 18);
+                if (isMobile && (reportStep === 'form' || isMobileReportOpen)) {
+                    const centerLatLng: [number, number] = [latitude, longitude];
+                    map.setView(centerLatLng, 18);
+                    // Since the report form takes bottom part, we want the marker in the middle of top visible part
+                    const containerHeight = map.getSize().y;
+                    const offset = containerHeight * 0.25;
+                    map.panBy([0, -offset], { animate: true });
+                } else {
+                    map.setView([latitude, longitude], 18);
+                }
             }
             hapticSuccess();
             addToast('Location found successfully', 'success');
@@ -448,7 +457,16 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             const { latitude, longitude } = position.coords;
             setUserLocation([latitude, longitude]);
             if (map) {
-                map.setView([latitude, longitude], 18);
+                if (isMobile && (reportStep === 'form' || isMobileReportOpen)) {
+                    const centerLatLng: [number, number] = [latitude, longitude];
+                    map.setView(centerLatLng, 18);
+                    // Since the report form takes bottom part, we want the marker in the middle of top visible part
+                    const containerHeight = map.getSize().y;
+                    const offset = containerHeight * 0.25;
+                    map.panBy([0, -offset], { animate: true });
+                } else {
+                    map.setView([latitude, longitude], 18);
+                }
             }
             hapticSuccess();
             addToast('Location found successfully', 'success');
@@ -608,7 +626,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         setIsMobileMenuOpen(false);
                         setIsDonateModalOpen(true);
                     }}
-                    isHidden={isDonateModalOpen}
+                    isHidden={isDonateModalOpen || isMobileReportOpen || reportStep === 'form'}
                     issueCounts={issueCounts}
                 />
             )}
