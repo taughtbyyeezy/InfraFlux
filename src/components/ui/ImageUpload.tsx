@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Upload, RefreshCw, X, AlertCircle, PlusCircle, CheckCircle2, ArrowUp } from 'lucide-react';
+import { Upload, RefreshCw, X, AlertCircle, PlusCircle, CheckCircle2, ImagePlus } from 'lucide-react';
 
 interface ImageUploadProps {
     onCompressionComplete: (file: File) => void;
@@ -118,9 +118,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 <button
                     type="button"
                     onClick={handleButtonClick}
-                    className="report-btn-highlight w-full"
+                    className="btn-cancel w-full"
+                    style={{ width: '100%', gap: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                    <ArrowUp size={20} /> TAKE PHOTO EVIDENCE
+                    <ImagePlus size={20} /> ADD PHOTO
                 </button>
             )}
 

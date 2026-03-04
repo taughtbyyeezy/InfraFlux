@@ -171,9 +171,9 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 if (isMobile && (reportStep === 'form' || isMobileReportOpen)) {
                     const centerLatLng: [number, number] = [latitude, longitude];
                     map.setView(centerLatLng, 18);
-                    // Since the report form takes bottom part, we want the marker in the middle of top visible part
+                    // Since the report form takes 45%, we want the marker in the middle of top visible 55% (at 27.5 from top)
                     const containerHeight = map.getSize().y;
-                    const offset = containerHeight * 0.25;
+                    const offset = containerHeight * 0.225;
                     map.panBy([0, -offset], { animate: true });
                 } else {
                     map.setView([latitude, longitude], 18);
@@ -460,9 +460,9 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 if (isMobile && (reportStep === 'form' || isMobileReportOpen)) {
                     const centerLatLng: [number, number] = [latitude, longitude];
                     map.setView(centerLatLng, 18);
-                    // Since the report form takes bottom part, we want the marker in the middle of top visible part
+                    // Since the report form takes 45%, we want the marker in the middle of top visible 55% (at 27.5 from top)
                     const containerHeight = map.getSize().y;
-                    const offset = containerHeight * 0.25;
+                    const offset = containerHeight * 0.225;
                     map.panBy([0, -offset], { animate: true });
                 } else {
                     map.setView([latitude, longitude], 18);
@@ -763,7 +763,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 isMobile && selectedIssue && !reportStep && (
                     <MobileBottomPanel
                         onClose={() => setSelectedIssue(null)}
-                        height={0.5}
+                        height={0.45}
                         modal={true}
                     >
                         <div className="mobile-issue-details">
@@ -811,7 +811,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 isMobileReportOpen && (
                     <MobileBottomPanel
                         onClose={handleCancelReport}
-                        height={0.5}
+                        height={0.45}
                         modal={false}
                     >
                         <ReportForm

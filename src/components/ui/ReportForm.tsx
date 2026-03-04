@@ -358,24 +358,12 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
             <hr className="form-header-separator" />
             <div className="form-footer">
                 <button
-                    type="button"
-                    onClick={() => {
-                        hapticButton();
-                        onCancel();
-                    }}
-                    className="btn-cancel"
-                    disabled={isUploading || isSubmitting}
-                    style={{ flex: 0.3, height: '44px', opacity: 0.8, fontSize: '15px' }}
-                >
-                    <div className="btn-content">Cancel</div>
-                </button>
-                <button
                     type="submit"
                     className={`btn-submit progress-btn ${(isUploading || isSubmitting) ? 'loading' : ''}`}
                     disabled={!formData.location || isUploading || isSubmitting}
                     onClick={hapticButton}
                     style={{
-                        flex: 0.7,
+                        flex: 1,
                         height: '44px',
                         fontSize: '15px',
                         '--progress': `${isSubmitting ? uploadProgress : (isUploading ? 50 : 0)}%`
