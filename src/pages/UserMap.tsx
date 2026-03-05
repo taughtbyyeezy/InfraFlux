@@ -456,18 +456,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         const success = (position: GeolocationPosition) => {
             const { latitude, longitude } = position.coords;
             setUserLocation([latitude, longitude]);
-            if (map) {
-                if (isMobile && (reportStep === 'form' || isMobileReportOpen)) {
-                    const centerLatLng: [number, number] = [latitude, longitude];
-                    map.setView(centerLatLng, 18);
-                    // Since the report form takes 45%, we want the marker in the middle of top visible 55% (at 27.5 from top)
-                    const containerHeight = map.getSize().y;
-                    const offset = containerHeight * 0.225;
-                    map.panBy([0, -offset], { animate: true });
-                } else {
-                    map.setView([latitude, longitude], 18);
-                }
-            }
+            // Centering and offset are now handled reactively by LocateMeHandler
             hapticSuccess();
             addToast('Location found successfully', 'success');
         };
@@ -690,7 +679,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         }}
                         addToast={addToast}
                     />
-                    <LocateMeHandler center={userLocation} />
+                    <LocateMeHandler
+                        center={userLocation}
+                        isMobile={isMobile}
+                        isMenuOpen={reportStep === 'form' || isMobileReportOpen}
+                    />
 
                     <ScalingMarkers
                         issues={clusteredMarkers}
