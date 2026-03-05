@@ -1116,21 +1116,12 @@ body {
 }
 
 .mobile-header.hidden-for-support {
-  background: transparent;
-  border-bottom-color: transparent;
-  box-shadow: none;
-  pointer-events: none;
-}
-
-.mobile-header.hidden-for-support .mobile-logo,
-.mobile-header.hidden-for-support .mobile-hamburger {
   transform: translateY(-100%);
-  opacity: 0;
 }
 
 .mobile-header.hidden-for-support .mobile-logo-typeface {
   opacity: 1;
-  pointer-events: auto;
+  transform: translateX(-50%) translateY(70px);
 }
 
 .mobile-logo {
@@ -1142,6 +1133,7 @@ body {
   justify-content: center;
   border-radius: 12px;
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .mobile-logo img {
@@ -1158,6 +1150,7 @@ body {
   display: flex;
   align-items: center;
   z-index: 1;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .mobile-logo-typeface img {

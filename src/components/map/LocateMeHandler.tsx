@@ -13,17 +13,21 @@ export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({ center, isMobi
     const lastCenterRef = useRef<string>("");
 
     useEffect(() => {
-        if (center) {
-            const centerStr = center.join(',');
+        if (center && map) {
+            const centerStr = `${center.join(',')}-${isMenuOpen}`;
             if (lastCenterRef.current !== centerStr) {
                 lastCenterRef.current = centerStr;
 
                 // On mobile with the menu open, we want the marker to appear in the visible top 50%
                 if (isMobile && isMenuOpen) {
+                    // Force a view reset to current center first to ensure unprojection is accurate
+                    map.setView(center, 18, { animate: false });
+
                     const containerHeight = map.getSize().y;
                     const offsetPixels = containerHeight * 0.25;
 
-                    // To put the marker at 25% height, the map center must be shifted 25% DOWN geographcially
+                    // We want the user location (center) to appear at 25% height
+                    // The map center (setView target) should therefore be 25% height BELOW the user location
                     const centerPoint = map.latLngToContainerPoint(center);
                     const targetPoint = L.point(centerPoint.x, centerPoint.y + offsetPixels);
                     const targetLatLng = map.containerPointToLatLng(targetPoint);
