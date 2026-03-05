@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { query } from './db';
+import { query } from './db.js';
 import { z } from 'zod';
 
 // Validation Schemas
