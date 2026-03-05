@@ -1,11 +1,11 @@
 {
     "rewrites": [
         {
-            "source": "/api/(.*)",
+            "source": "/(api|health)(.*)",
             "destination": "/api"
         },
         {
-            "source": "/((?!api/).*)",
+            "source": "/((?!api|health).*)",
             "destination": "/index.html"
         }
     ]
