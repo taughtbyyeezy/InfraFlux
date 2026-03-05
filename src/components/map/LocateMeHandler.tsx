@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
+import L from 'leaflet';
 
 interface LocateMeHandlerProps {
     center: [number, number] | null;
@@ -17,15 +18,17 @@ export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({ center, isMobi
             if (lastCenterRef.current !== centerStr) {
                 lastCenterRef.current = centerStr;
 
-                // On mobile with the menu open, we want the center to appear in the visible top space
+                // On mobile with the menu open, we want the marker to appear in the visible top 50%
                 if (isMobile && isMenuOpen) {
                     const containerHeight = map.getSize().y;
-                    // Move the geographic center point into the middle of the top visible 50%
-                    // This means moving it from 0.5H to 0.25H. Panning viewport DOWN by 0.25H does this.
-                    const offset = containerHeight * 0.225; // Slight adjustment for handle
+                    const offsetPixels = containerHeight * 0.25;
 
-                    map.setView(center, 18, { animate: false });
-                    map.panBy([0, offset], { animate: true });
+                    // To put the marker at 25% height, the map center must be shifted 25% DOWN geographcially
+                    const centerPoint = map.latLngToContainerPoint(center);
+                    const targetPoint = L.point(centerPoint.x, centerPoint.y + offsetPixels);
+                    const targetLatLng = map.containerPointToLatLng(targetPoint);
+
+                    map.setView(targetLatLng, 18, { animate: true });
                 } else {
                     map.setView(center, 18);
                 }
