@@ -13,7 +13,7 @@ const AdminDashboard = () => {
     const [issues, setIssues] = useState<InfrastructureIssue[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>('pending');
-    const baseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+    const baseUrl = import.meta.env.VITE_API_URL || '';
 
     const fetchIssues = async () => {
         setIsLoading(true);

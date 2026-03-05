@@ -73,7 +73,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
 
 
-    const baseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+    const baseUrl = import.meta.env.VITE_API_URL || '';
 
     // Initialize menu open on desktop
     useEffect(() => {
