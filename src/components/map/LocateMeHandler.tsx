@@ -4,40 +4,66 @@ import L from 'leaflet';
 
 interface LocateMeHandlerProps {
     center: [number, number] | null;
+    focusLocation?: [number, number] | null;
     isMobile?: boolean;
     isMenuOpen?: boolean;
+    locateTrigger?: number;
+    focusTrigger?: number;
 }
 
-export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({ center, isMobile, isMenuOpen }) => {
+export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({
+    center,
+    focusLocation,
+    isMobile,
+    isMenuOpen,
+    locateTrigger = 0,
+    focusTrigger = 0
+}) => {
     const map = useMap();
     const lastCenterRef = useRef<string>("");
+    const lastLocateTriggerRef = useRef<number>(0);
+    const lastFocusTriggerRef = useRef<number>(0);
+
+    const getOffsetCenter = (latlng: [number, number], targetZoom: number) => {
+        if (!map || !isMobile) return latlng;
+
+        // 1. Project the GPS point to absolute pixel coordinates at the target zoom level
+        const projectedPoint = map.project(latlng, targetZoom);
+
+        // 2. Adjust for the visual offset (move camera 25% "down" the screen)
+        const containerHeight = map.getSize().y;
+        const offsetPoint = L.point(projectedPoint.x, projectedPoint.y + (containerHeight * 0.25));
+
+        // 3. Unproject back to GPS coordinates
+        const targetLatLng = map.unproject(offsetPoint, targetZoom);
+        return [targetLatLng.lat, targetLatLng.lng] as [number, number];
+    };
 
     useEffect(() => {
-        if (center && map) {
-            const centerStr = `${center.join(',')}-${isMenuOpen}`;
-            if (lastCenterRef.current !== centerStr) {
-                lastCenterRef.current = centerStr;
+        if (!map) return;
 
-                // On mobile with the menu open, we want the marker to appear in the visible top 50%
-                if (isMobile && isMenuOpen) {
-                    // Force a view reset to current center first to ensure unprojection is accurate
-                    map.setView(center, 18, { animate: false });
+        const currentZoom = map.getZoom();
 
-                    const containerHeight = map.getSize().y;
-                    const offsetPixels = containerHeight * 0.25;
+        // Handle Locate Me (Scenario 1 & 2)
+        const locateTriggerChanged = locateTrigger !== lastLocateTriggerRef.current;
+        lastLocateTriggerRef.current = locateTrigger;
 
-                    // We want the user location (center) to appear at 25% height
-                    // The map center (setView target) should therefore be 25% height BELOW the user location
-                    const centerPoint = map.latLngToContainerPoint(center);
-                    const targetPoint = L.point(centerPoint.x, centerPoint.y + offsetPixels);
-                    const targetLatLng = map.containerPointToLatLng(targetPoint);
-
-                    map.setView(targetLatLng, 18, { animate: true });
-                } else {
-                    map.setView(center, 18);
-                }
-            }
+        if (center && (locateTriggerChanged || (lastCenterRef.current !== center.join(',')))) {
+            lastCenterRef.current = center.join(',');
+            const targetZoom = 18;
+            const finalTarget = (isMobile && isMenuOpen) ? getOffsetCenter(center, targetZoom) : center;
+            map.setView(finalTarget, targetZoom, { animate: true, duration: 0.5 });
+            return; // Priority to GPS move
         }
-    }, [center, map, isMobile, isMenuOpen]);
+
+        // Handle Map Click Focus (Explicit trigger from UserMap)
+        const focusTriggerChanged = focusTrigger !== lastFocusTriggerRef.current;
+        lastFocusTriggerRef.current = focusTrigger;
+
+        if (isMobile && focusTriggerChanged && focusLocation) {
+            const offsetTarget = getOffsetCenter(focusLocation, currentZoom);
+            map.setView(offsetTarget, currentZoom, { animate: true, duration: 0.5 });
+        }
+    }, [center, focusLocation, map, isMobile, isMenuOpen, locateTrigger, focusTrigger]);
     return null;
 };

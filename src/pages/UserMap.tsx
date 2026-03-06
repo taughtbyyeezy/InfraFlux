@@ -57,6 +57,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
     const [votingIssueId, setVotingIssueId] = useState<string | null>(null);
     const [votingType, setVotingType] = useState<'true' | 'false' | null>(null);
+    const [locateTrigger, setLocateTrigger] = useState(0);
+    const [focusTrigger, setFocusTrigger] = useState(0);
 
     const [reportForm, setReportForm] = useState({
         type: 'pothole' as IssueType,
@@ -148,54 +150,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         }
     };
 
-    const handleGetCurrentLocation = () => {
-        if (!navigator.geolocation) {
-            addToast('Geolocation is not supported by your browser', 'warning');
-            return;
-        }
-
-        if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
-            addToast('Warning: Geolocation usually requires HTTPS. Please use https:// or test on localhost.', 'warning');
-        }
-
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        };
-
-        const success = (position: GeolocationPosition) => {
-            const { latitude, longitude } = position.coords;
-            setReportForm(prev => ({ ...prev, location: [latitude, longitude] }));
-            if (map) {
-                if (isMobile && (reportStep === 'form' || isMobileReportOpen)) {
-                    const centerLatLng: [number, number] = [latitude, longitude];
-                    map.setView(centerLatLng, 18);
-                    // Since the report form takes 45%, we want the marker in the middle of top visible 55% (at 27.5 from top)
-                    const containerHeight = map.getSize().y;
-                    const offset = containerHeight * 0.225;
-                    map.panBy([0, -offset], { animate: true });
-                } else {
-                    map.setView([latitude, longitude], 18);
-                }
-            }
-            hapticSuccess();
-            addToast('Location found successfully', 'success');
-        };
-
-        const error = (err: GeolocationPositionError) => {
-            console.error('Geolocation error:', err);
-            if (err.code === err.TIMEOUT && options.enableHighAccuracy) {
-                navigator.geolocation.getCurrentPosition(success, (secondErr) => {
-                    addToast(`Failed to get location: ${getGeoErrorMessage(secondErr)}`, 'error');
-                }, { ...options, enableHighAccuracy: false, timeout: 5000 });
-                return;
-            }
-            addToast(`Failed to get location: ${getGeoErrorMessage(err)}`, 'error');
-        };
-
-        navigator.geolocation.getCurrentPosition(success, error, options);
-    };
 
     const handleReport = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -437,7 +391,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         );
     };
 
-    const handleLocateMe = () => {
+    const performGeolocation = (updateReport: boolean = false) => {
         if (!navigator.geolocation) {
             addToast('Geolocation is not supported by your browser.', 'warning');
             return;
@@ -455,14 +409,30 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
         const success = (position: GeolocationPosition) => {
             const { latitude, longitude } = position.coords;
-            setUserLocation([latitude, longitude]);
-            // Centering and offset are now handled reactively by LocateMeHandler
+            const newLoc: [number, number] = [latitude, longitude];
+
+            setUserLocation(newLoc);
+
+            if (isMobile) {
+                // Scenario 1: Always increment locateTrigger to show GPS dot focus
+                setLocateTrigger(prev => prev + 1);
+
+                if (updateReport) {
+                    // Scenario 3: Also update report marker and trigger focus
+                    setReportForm(prev => ({ ...prev, location: newLoc }));
+                    setFocusTrigger(prev => prev + 1);
+                }
+            } else if (updateReport) {
+                // Desktop path
+                setReportForm(prev => ({ ...prev, location: newLoc }));
+            }
+
             hapticSuccess();
             addToast('Location found successfully', 'success');
         };
 
         const error = (err: GeolocationPositionError) => {
-            console.error('LocateMe error:', err);
+            console.error('Geolocation error:', err);
             if (err.code === err.TIMEOUT && options.enableHighAccuracy) {
                 navigator.geolocation.getCurrentPosition(success, (secondErr) => {
                     addToast(`Unable to get location: ${getGeoErrorMessage(secondErr)}`, 'error');
@@ -474,6 +444,10 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
         navigator.geolocation.getCurrentPosition(success, error, options);
     };
+
+    // Replace the old handlers with unified logic
+    const handleLocateMe = () => performGeolocation(false);
+    const handleGetCurrentLocation = () => performGeolocation(true);
 
     const filteredIssues = useMemo(() => {
         if (!Array.isArray(issues)) return [];
@@ -673,6 +647,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     honeypot: '',
                                     userLocation: null
                                 });
+                                setFocusTrigger(prev => prev + 1);
                             } else if (reportStep === 'form' || isMobileReportOpen) {
                                 setReportForm(prev => ({ ...prev, location: loc }));
                             }
@@ -681,8 +656,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     />
                     <LocateMeHandler
                         center={userLocation}
+                        focusLocation={reportForm.location}
                         isMobile={isMobile}
                         isMenuOpen={reportStep === 'form' || isMobileReportOpen}
+                        locateTrigger={locateTrigger}
+                        focusTrigger={focusTrigger}
                     />
 
                     <ScalingMarkers
