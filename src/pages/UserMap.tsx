@@ -59,6 +59,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [votingType, setVotingType] = useState<'true' | 'false' | null>(null);
     const [locateTrigger, setLocateTrigger] = useState(0);
     const [focusTrigger, setFocusTrigger] = useState(0);
+    const [defaultLocation, setDefaultLocation] = useState<[number, number] | null>(null);
 
     const [reportForm, setReportForm] = useState({
         type: 'pothole' as IssueType,
@@ -116,10 +117,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             setIssues(Array.isArray(data.issues) ? data.issues : []);
 
             // Handle IP-based initial centering
-            if (!hasInitialCentered && data.userDefaultLocation && map) {
-                const [lat, lng] = data.userDefaultLocation;
-                map.setView([lat, lng], 13); // Zoom out slightly for city-level view
-                setHasInitialCentered(true);
+            if (!hasInitialCentered && data.userDefaultLocation) {
+                setDefaultLocation(data.userDefaultLocation);
             }
         } catch (error) {
             console.error('Failed to fetch map state:', error);
@@ -132,6 +131,15 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     useEffect(() => {
         fetchMapState(currentTime);
     }, [currentTime]);
+
+    // Separate effect for initial centering to avoid race conditions with map readiness
+    useEffect(() => {
+        if (!hasInitialCentered && defaultLocation && map) {
+            const [lat, lng] = defaultLocation;
+            map.setView([lat, lng], 13);
+            setHasInitialCentered(true);
+        }
+    }, [defaultLocation, map, hasInitialCentered]);
 
     const getGeoErrorMessage = (error: GeolocationPositionError) => {
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
