@@ -71,6 +71,32 @@ export const IssueDetails: React.FC<IssueDetailsProps> = ({ issue, magnitudeLabe
                 </div>
             </div>
 
+            {(issue.mla_name || issue.ac_name) && (
+                <div className="menu-section">
+                    <div className="menu-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                        REPRESENTATIVE JURISDICTION
+                    </div>
+                    <div className="jurisdiction-card">
+                        <div className="jurisdiction-main-info">
+                            <div className="jurisdiction-title">
+                                {issue.mla_name || 'PENDING...'}
+                            </div>
+                            <div className="jurisdiction-subtitle">
+                                {issue.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                            </div>
+                        </div>
+
+                        <div className="jurisdiction-divider"></div>
+
+                        <div className="jurisdiction-party-info">
+                            <div className="jurisdiction-party-value">
+                                {issue.party || 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {issue.note && (
                 <div className="menu-section">
                     <div className="menu-label">DESCRIPTION</div>

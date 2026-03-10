@@ -17,6 +17,7 @@
 
   /* Logo Settings */
   --logo-x-offset: -10px;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 /* Base Light Theme Tokens */
@@ -52,6 +53,9 @@
   --shadow-sidebar-right: inset 1px 0 0 var(--glass-refraction), -10px 0 40px rgba(0, 0, 0, 0.4);
   --glass-opaque: #ebebe9;
   --drawer-handle-bg: rgba(0, 0, 0, 0.15);
+  --vote-pill-outline: rgba(0, 0, 0, 0.5);
+  --jurisdiction-bg: linear-gradient(45deg, #e7e7e7 0%, #ebebe9 100%);
+  --jurisdiction-bg-hover: linear-gradient(45deg, #e5e5e7 0%, #ffffff 100%);
 
   /* Magnitude Levels - Light Theme */
   --mag-low-bg: #ecfdf5;
@@ -97,6 +101,9 @@
   --filter-dot-border: var(--accent);
   --filter-dot-shadow: 0 0 10px var(--accent);
   --btn-glow: 0 4px 20px rgba(0, 122, 255, 0.3);
+  --vote-pill-outline: rgba(255, 255, 255, 0.2);
+  --jurisdiction-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  --jurisdiction-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
   --pill-glow: 0 4px 20px rgba(0, 122, 255, 0.4);
   --filter-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   --shadow-sidebar-left: inset -1px 0 0 var(--glass-refraction), 20px 0 80px rgba(0, 0, 0, 0.4);
@@ -797,6 +804,93 @@ body {
   /* Adjust this value to change the vertical space between label and value */
 }
 
+/* Jurisdiction Card - Final Restructure */
+.jurisdiction-card {
+  background: var(--jurisdiction-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+  margin-top: 8px;
+}
+
+.jurisdiction-card:hover {
+  background: var(--jurisdiction-bg-hover);
+  border-color: var(--accent);
+}
+
+.jurisdiction-main-info {
+  flex: 3;
+  /* 3/4 */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jurisdiction-divider {
+  width: 1px;
+  height: 48px;
+  background: var(--glass-border);
+  margin: 0 20px;
+  opacity: 0.6;
+}
+
+.jurisdiction-party-info {
+  flex: 1;
+  /* 1/4 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.jurisdiction-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: normal;
+}
+
+.jurisdiction-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+}
+
+.jurisdiction-party-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08rem;
+}
+
+.jurisdiction-party-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: 0.1rem;
+}
+
+.badge-party-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-party-value {
+  color: var(--accent);
+}
+
 .info-card-label {
   font-size: 0.65rem;
   text-transform: uppercase;
@@ -1383,6 +1477,12 @@ body {
   pointer-events: auto;
 }
 
+.dark-theme .mobile-locate-btn {
+  background: rgba(30, 30, 30, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
 .mobile-locate-btn:active {
   transform: scale(0.95);
 }
@@ -1765,6 +1865,7 @@ body {
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-highlight);
   border-radius: var(--radius-standard);
   height: 50px;
   /* Desktop height */

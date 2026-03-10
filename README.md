@@ -13,6 +13,7 @@
   - **Photo Evidence**: Integrated image compression and eager background processing.
   - **Precision Location**: One-tap "Locate Me" and manual map-pick functionality.
 - **Smart Filtering**: Live filters for Potholes (Red 🔴), Water Logging (Blue 🔵), and Garbage Dumps (Yellow 🟡).
+- **Accountable Representatives**: Integration with **PostGIS** spatial data to automatically identify the responsible MLA and constituency for every reported issue.
 - **Pro-Grade Mobile Experience**: Fully responsive "Apple Glass" UI designed for field reporting.
 - **Admin Dashboard**: Secure integrated dashboard for validating and resolving reported issues.
 - **Anti-Misuse Core**: 

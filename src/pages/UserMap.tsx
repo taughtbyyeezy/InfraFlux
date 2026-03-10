@@ -68,7 +68,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         location: null as [number, number] | null,
         magnitude: 5,
         honeypot: '',
-        userLocation: null as [number, number] | null
+        userLocation: null as [number, number] | null,
+        mla_name: undefined as string | undefined,
+        party: undefined as string | undefined,
+        ac_name: undefined as string | undefined,
+        st_name: undefined as string | undefined
     });
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,6 +148,44 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 return error.message || "An unknown error occurred.";
         }
     };
+
+    // Effect to lookup MLA when report location changes
+    useEffect(() => {
+        const lookupMLA = async () => {
+            if (!reportForm.location) return;
+
+            try {
+                const [lat, lng] = reportForm.location;
+                const response = await fetch(`${baseUrl}/api/lookup-mla?lat=${lat}&lng=${lng}`);
+                const data = await response.json();
+
+                if (data.found) {
+                    setReportForm(prev => ({
+                        ...prev,
+                        mla_name: data.mla_name,
+                        party: data.party,
+                        ac_name: data.ac_name,
+                        st_name: data.st_name
+                    }));
+                } else {
+                    // Reset MLA info but keep constituency name if it was somehow partially found
+                    setReportForm(prev => ({
+                        ...prev,
+                        mla_name: undefined,
+                        party: undefined,
+                        ac_name: 'Unknown',
+                        st_name: 'India'
+                    }));
+                }
+            } catch (error) {
+                console.error('Failed to lookup MLA:', error);
+            }
+        };
+
+        if (reportStep === 'form' || isMobileReportOpen) {
+            lookupMLA();
+        }
+    }, [reportForm.location, reportStep, isMobileReportOpen, baseUrl]);
 
 
     const handleReport = async (e: React.FormEvent) => {
@@ -225,7 +267,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 setReportStep(null);
                 setIsMobileReportOpen(false);
                 setReportForm({
-                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
+                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null,
+                    mla_name: undefined, party: undefined, ac_name: undefined, st_name: undefined
                 });
                 setUploadProgress(0);
                 fetchMapState(new Date());
@@ -358,7 +401,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         setReportStep(null);
         setIsMobileReportOpen(false);
         setReportForm({
-            type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
+            type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null,
+            mla_name: undefined, party: undefined, ac_name: undefined, st_name: undefined
         });
     };
 
@@ -640,7 +684,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     location: loc,
                                     magnitude: 5,
                                     honeypot: '',
-                                    userLocation: null
+                                    userLocation: null,
+                                    mla_name: undefined,
+                                    party: undefined,
+                                    ac_name: undefined,
+                                    st_name: undefined
                                 });
                                 setFocusTrigger(prev => prev + 1);
                             } else if (reportStep === 'form' || isMobileReportOpen) {
@@ -702,7 +750,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                 setReportStep(null);
                                 setIsMobileReportOpen(true);
                                 setReportForm({
-                                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null
+                                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null,
+                                    mla_name: undefined, party: undefined, ac_name: undefined, st_name: undefined
                                 });
                             }}
                         >

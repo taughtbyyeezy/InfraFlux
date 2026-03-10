@@ -22,6 +22,12 @@ export interface InfrastructureIssue {
     magnitude?: number;
     note?: string;
     originalId?: string;
+    mla_name?: string;
+    party?: string;
+    ac_name?: string;
+    st_name?: string;
+    dist_name?: string;
+    constituency_id?: number | string;
 }
 
 export interface HistoricalSnapshot {

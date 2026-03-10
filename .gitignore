@@ -36,3 +36,8 @@ LOCAL_SETUP.md
 
 # Local markers
 not-env
+
+# Local Spatial Data & Seeding
+data/
+scripts/
+SPATIAL_JOURNEY.md

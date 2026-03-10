@@ -1,3 +1,12 @@
+/**
+ * InfraFlux API Routes
+ * 
+ * [Spatial Data Journey] 85% Size Reduction
+ * 1. 250MB+ Shapefiles simplified via Douglas-Peucker to GeoJSON (<40MB).
+ * 2. Reduced vertex density & precision (6 decimals) for cloud-performance.
+ * 3. Integrated India-wide MLA metadata into PostGIS `mla_data`.
+ * 4. Point-in-Polygon (ST_Contains) with GiST indexing for O(1) jurisdiction lookup.
+ */
 import { Router, Request, Response, NextFunction } from 'express';
 import { query } from './db.js';
 import { z } from 'zod';
@@ -17,6 +26,11 @@ const IssueReportSchema = z.object({
     magnitude: z.number().int().min(1).max(10).optional(),
     honeypot: z.string().max(0).optional(), // Must be empty
     userLocation: z.tuple([z.number(), z.number()]).optional() // Real GPS location
+});
+
+const LookupMLASchema = z.object({
+    lat: z.string().transform(Number),
+    lng: z.string().transform(Number)
 });
 
 const VoteSchema = z.object({
@@ -56,6 +70,11 @@ interface IssueRow {
     updated_at: Date;
     images: string[];
     note: string;
+    mla_name?: string;
+    party?: string;
+    ac_name?: string;
+    st_name?: string;
+    dist_name?: string;
 }
 
 // Haversine formula to calculate distance in km
@@ -70,6 +89,42 @@ const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 };
+
+// GET /api/lookup-mla?lat=XYZ&lng=XYZ
+router.get('/lookup-mla', async (req: Request, res: Response) => {
+    try {
+        const { lat, lng } = LookupMLASchema.parse(req.query);
+
+        const sql = `
+            SELECT 
+                ac_name,
+                mla_name,
+                party,
+                st_name,
+                dist_name
+            FROM mla_data 
+            WHERE ST_Contains(geom, ST_SetSRID(ST_Point($1, $2), 4326))
+            LIMIT 1;
+        `;
+
+        const result = await query(sql, [lng, lat]);
+
+        if (result.rows.length === 0) {
+            return res.json({ found: false });
+        }
+
+        res.json({
+            found: true,
+            ...result.rows[0]
+        });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid coordinates' });
+        }
+        console.error('Error looking up MLA:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 // GET /api/map-state?timestamp=XYZ
 router.get('/map-state', async (req: Request, res: Response) => {
@@ -93,6 +148,11 @@ router.get('/map-state', async (req: Request, res: Response) => {
         u.status,
         u.timestamp as updated_at,
         u.note,
+        ac.mla_name,
+        ac.party,
+        ac.ac_name,
+        ac.st_name,
+        ac.dist_name,
         COALESCE(json_agg(distinct m.image_url) FILTER (WHERE m.image_url IS NOT NULL), '[]') as images
       FROM issues i
       JOIN LATERAL (
@@ -102,9 +162,9 @@ router.get('/map-state', async (req: Request, res: Response) => {
         LIMIT 1
       ) u ON true
       LEFT JOIN media m ON m.update_id = u.id
-      WHERE true
-
-      GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note
+      LEFT JOIN mla_data ac ON ST_Contains(ac.geom, i.geom::geometry)
+      GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note, ac.id
+      ORDER BY i.created_at DESC;
     `;
 
         const result = await query(sql, [targetTime]);

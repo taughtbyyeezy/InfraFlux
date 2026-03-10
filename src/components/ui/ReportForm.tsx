@@ -13,6 +13,11 @@ interface ReportFormData {
     magnitude: number;
     honeypot?: string;
     userLocation?: [number, number] | null;
+    mla_name?: string;
+    party?: string;
+    ac_name?: string;
+    st_name?: string;
+    dist_name?: string;
 }
 
 interface ReportFormProps {
@@ -154,6 +159,30 @@ const DesktopReportForm: React.FC<ReportFormProps & { isUploading: boolean; setI
                         </button>
                     </div>
                 </div>
+
+                {formData.ac_name && (
+                    <div className="form-group animate-in">
+                        <label>REPRESENTATIVE JURISDICTION</label>
+                        <div className="jurisdiction-card">
+                            <div className="jurisdiction-main-info">
+                                <div className="jurisdiction-title">
+                                    {formData.mla_name || 'PENDING...'}
+                                </div>
+                                <div className="jurisdiction-subtitle">
+                                    {formData.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                </div>
+                            </div>
+
+                            <div className="jurisdiction-divider"></div>
+
+                            <div className="jurisdiction-party-info">
+                                <div className="jurisdiction-party-value">
+                                    {formData.party || 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="form-group">
                     <label>PHOTO EVIDENCE</label>
@@ -315,6 +344,30 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
                         </button>
                     </div>
                 </div>
+
+                {formData.ac_name && (
+                    <div className="form-group animate-in">
+                        <label>REPRESENTATIVE JURISDICTION</label>
+                        <div className="jurisdiction-card">
+                            <div className="jurisdiction-main-info">
+                                <div className="jurisdiction-title">
+                                    {formData.mla_name || 'PENDING...'}
+                                </div>
+                                <div className="jurisdiction-subtitle">
+                                    {formData.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                </div>
+                            </div>
+
+                            <div className="jurisdiction-divider"></div>
+
+                            <div className="jurisdiction-party-info">
+                                <div className="jurisdiction-party-value">
+                                    {formData.party || 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="form-group">
                     <label>PHOTO EVIDENCE</label>

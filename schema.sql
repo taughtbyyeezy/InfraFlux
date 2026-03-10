@@ -46,7 +46,20 @@ CREATE TABLE IF NOT EXISTS issue_votes (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 5. MLA Data (Spatial Data & Representative Metadata)
+CREATE TABLE IF NOT EXISTS mla_data (
+    id SERIAL PRIMARY KEY,
+    st_name VARCHAR(100) NOT NULL,
+    ac_name VARCHAR(100) NOT NULL,
+    mla_name VARCHAR(150),
+    party VARCHAR(50),
+    dist_name VARCHAR(100),
+    geom GEOMETRY(MultiPolygon, 4326),
+    UNIQUE(st_name, ac_name)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_issues_geom ON issues USING GIST (geom);
 CREATE INDEX IF NOT EXISTS idx_issue_updates_issue_id ON issue_updates(issue_id);
 CREATE INDEX IF NOT EXISTS idx_issue_votes_issue_voter ON issue_votes(issue_id, voter_id);
+CREATE INDEX IF NOT EXISTS idx_mla_spatial_gist ON mla_data USING GIST (geom);
