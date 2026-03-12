@@ -16,7 +16,12 @@ CREATE TABLE IF NOT EXISTS issues (
     votes_true INTEGER DEFAULT 1,
     votes_false INTEGER DEFAULT 0,
     resolve_votes INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    reported_mla_name VARCHAR(150),
+    reported_mla_party VARCHAR(50),
+    reported_ac_name VARCHAR(100),
+    reported_st_name VARCHAR(100),
+    reported_dist_name VARCHAR(100)
 );
 
 -- 3. Issue Updates Table (History/Status)
@@ -60,6 +65,7 @@ CREATE TABLE IF NOT EXISTS mla_data (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_issues_geom ON issues USING GIST (geom);
+CREATE INDEX IF NOT EXISTS idx_issues_reported_mla ON issues (reported_mla_name);
 CREATE INDEX IF NOT EXISTS idx_issue_updates_issue_id ON issue_updates(issue_id);
 CREATE INDEX IF NOT EXISTS idx_issue_votes_issue_voter ON issue_votes(issue_id, voter_id);
 CREATE INDEX IF NOT EXISTS idx_mla_spatial_gist ON mla_data USING GIST (geom);

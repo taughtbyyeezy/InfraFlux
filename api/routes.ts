@@ -70,11 +70,16 @@ interface IssueRow {
     updated_at: Date;
     images: string[];
     note: string;
-    mla_name?: string;
-    party?: string;
-    ac_name?: string;
-    st_name?: string;
-    dist_name?: string;
+    reported_mla_name?: string;
+    reported_mla_party?: string;
+    reported_ac_name?: string;
+    reported_st_name?: string;
+    reported_dist_name?: string;
+    current_mla_name?: string;
+    current_mla_party?: string;
+    current_ac_name?: string;
+    current_st_name?: string;
+    current_dist_name?: string;
 }
 
 // Haversine formula to calculate distance in km
@@ -132,7 +137,7 @@ router.get('/map-state', async (req: Request, res: Response) => {
     const targetTime = timestamp ? new Date(timestamp as string) : new Date();
 
     try {
-        const sql = `
+const sql = `
       SELECT 
         i.id,
         i.type,
@@ -148,11 +153,16 @@ router.get('/map-state', async (req: Request, res: Response) => {
         u.status,
         u.timestamp as updated_at,
         u.note,
-        ac.mla_name,
-        ac.party,
-        ac.ac_name,
-        ac.st_name,
-        ac.dist_name,
+        i.reported_mla_name,
+        i.reported_mla_party,
+        i.reported_ac_name,
+        i.reported_st_name,
+        i.reported_dist_name,
+        ac.mla_name as current_mla_name,
+        ac.party as current_mla_party,
+        ac.ac_name as current_ac_name,
+        ac.st_name as current_st_name,
+        ac.dist_name as current_dist_name,
         COALESCE(json_agg(distinct m.image_url) FILTER (WHERE m.image_url IS NOT NULL), '[]') as images
       FROM issues i
       JOIN LATERAL (
@@ -163,7 +173,7 @@ router.get('/map-state', async (req: Request, res: Response) => {
       ) u ON true
       LEFT JOIN media m ON m.update_id = u.id
       LEFT JOIN mla_data ac ON ST_Contains(ac.geom, i.geom::geometry)
-      GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note, ac.id
+      GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note, i.reported_mla_name, i.reported_mla_party, i.reported_ac_name, i.reported_st_name, i.reported_dist_name, ac.id
       ORDER BY i.created_at DESC;
     `;
 
@@ -220,7 +230,7 @@ router.post('/report', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Bot detected' });
     }
 
-    // 2. Geofencing check (if user provided GPS)
+// 2. Geofencing check (if user provided GPS)
     const [lat, lng] = location;
     if (userLocation) {
         const distance = getDistance(userLocation[0], userLocation[1], lat, lng);
@@ -231,14 +241,33 @@ router.post('/report', async (req: Request, res: Response) => {
         }
     }
 
+    // 3. Lookup MLA at report location
+    let reportedMLA = { mla_name: null, party: null, ac_name: null, st_name: null, dist_name: null };
+    try {
+        const mlaResult = await query(`
+            SELECT mla_name, party, ac_name, st_name, dist_name
+            FROM mla_data 
+            WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326))
+            LIMIT 1
+        `, [lng, lat]);
+
+        if (mlaResult.rows.length > 0) {
+            reportedMLA = mlaResult.rows[0];
+        }
+    } catch (mlaError) {
+        console.error('Error looking up MLA for report:', mlaError);
+    }
+
     try {
         // Start transaction
         await query('BEGIN');
 
-        // 1. Insert Issue with 1 initial vote from creator
+// 1. Insert Issue with 1 initial vote from creator
         const issueResult = await query(
-            'INSERT INTO issues (type, geom, reported_by, magnitude, votes_true) VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6) RETURNING id',
-            [type, lng, lat, reportedBy, magnitude || 5, 1]
+            `INSERT INTO issues (type, geom, reported_by, magnitude, votes_true, reported_mla_name, reported_mla_party, reported_ac_name, reported_st_name, reported_dist_name) 
+             VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, $7, $8, $9, $10, $11) 
+             RETURNING id`,
+            [type, lng, lat, reportedBy, magnitude || 5, 1, reportedMLA.mla_name, reportedMLA.party, reportedMLA.ac_name, reportedMLA.st_name, reportedMLA.dist_name]
         );
         const issueId = issueResult.rows[0].id;
 

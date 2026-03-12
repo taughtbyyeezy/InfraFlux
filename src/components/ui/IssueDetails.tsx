@@ -71,29 +71,84 @@ export const IssueDetails: React.FC<IssueDetailsProps> = ({ issue, magnitudeLabe
                 </div>
             </div>
 
-            {(issue.mla_name || issue.ac_name) && (
+            {((issue.reported_mla_name || issue.mla_name) || (issue.current_mla_name) || (issue.reported_ac_name || issue.ac_name) || (issue.current_ac_name)) && (
                 <div className="menu-section">
                     <div className="menu-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                         REPRESENTATIVE JURISDICTION
                     </div>
-                    <div className="jurisdiction-card">
-                        <div className="jurisdiction-main-info">
-                            <div className="jurisdiction-title">
-                                {issue.mla_name || 'PENDING...'}
+
+                    {/* Logic: Only show two cards if both exist and are different */}
+                    {((issue.reported_mla_name || issue.mla_name) && issue.current_mla_name &&
+                        ((issue.reported_mla_name || issue.mla_name) !== issue.current_mla_name ||
+                            (issue.reported_ac_name || issue.ac_name) !== issue.current_ac_name)) ? (
+                        <>
+                            {/* Current MLA */}
+                            <div className="jurisdiction-card" style={{ marginBottom: '12px' }}>
+                                <div className="jurisdiction-main-info">
+                                    <div className="jurisdiction-title" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                        CURRENT REPRESENTATIVE
+                                    </div>
+                                    <div className="jurisdiction-title">
+                                        {issue.current_mla_name || 'PENDING...'}
+                                    </div>
+                                    <div className="jurisdiction-subtitle">
+                                        {issue.current_ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                    </div>
+                                </div>
+
+                                <div className="jurisdiction-divider"></div>
+
+                                <div className="jurisdiction-party-info">
+                                    <div className="jurisdiction-party-value">
+                                        {issue.current_mla_party || 'N/A'}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="jurisdiction-subtitle">
-                                {issue.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+
+                            {/* MLA at Time of Report */}
+                            <div className="jurisdiction-card" style={{ background: 'rgba(255, 255, 255, 0.02)', borderColor: 'var(--border-light)' }}>
+                                <div className="jurisdiction-main-info">
+                                    <div className="jurisdiction-title" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                        MLA AT TIME OF REPORT
+                                    </div>
+                                    <div className="jurisdiction-title">
+                                        {issue.reported_mla_name || issue.mla_name || 'UNKNOWN'}
+                                    </div>
+                                    <div className="jurisdiction-subtitle">
+                                        {(issue.reported_ac_name || issue.ac_name)?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                    </div>
+                                </div>
+
+                                <div className="jurisdiction-divider"></div>
+
+                                <div className="jurisdiction-party-info">
+                                    <div className="jurisdiction-party-value">
+                                        {issue.reported_mla_party || issue.party || 'N/A'}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        /* Show ONE card - prefer current MLA, fall back to reported/legacy */
+                        <div className="jurisdiction-card">
+                            <div className="jurisdiction-main-info">
+                                <div className="jurisdiction-title">
+                                    {issue.current_mla_name || issue.reported_mla_name || issue.mla_name || 'PENDING...'}
+                                </div>
+                                <div className="jurisdiction-subtitle">
+                                    {(issue.current_ac_name || issue.reported_ac_name || issue.ac_name)?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                </div>
+                            </div>
+
+                            <div className="jurisdiction-divider"></div>
+
+                            <div className="jurisdiction-party-info">
+                                <div className="jurisdiction-party-value">
+                                    {issue.current_mla_party || issue.reported_mla_party || issue.party || 'N/A'}
+                                </div>
                             </div>
                         </div>
-
-                        <div className="jurisdiction-divider"></div>
-
-                        <div className="jurisdiction-party-info">
-                            <div className="jurisdiction-party-value">
-                                {issue.party || 'N/A'}
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
 

@@ -22,12 +22,24 @@ export interface InfrastructureIssue {
     magnitude?: number;
     note?: string;
     originalId?: string;
+    // MLA at time of report (stored when issue was created)
+    reported_mla_name?: string;
+    reported_mla_party?: string;
+    reported_ac_name?: string;
+    reported_st_name?: string;
+    reported_dist_name?: string;
+    // Current MLA (live lookup)
+    current_mla_name?: string;
+    current_mla_party?: string;
+    current_ac_name?: string;
+    current_st_name?: string;
+    current_dist_name?: string;
+    // Legacy fields (for backward compatibility)
     mla_name?: string;
     party?: string;
     ac_name?: string;
     st_name?: string;
     dist_name?: string;
-    constituency_id?: number | string;
 }
 
 export interface HistoricalSnapshot {

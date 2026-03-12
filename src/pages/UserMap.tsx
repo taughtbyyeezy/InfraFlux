@@ -628,7 +628,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         setIsMobileMenuOpen(false);
                         setIsDonateModalOpen(true);
                     }}
-                    isHidden={isDonateModalOpen || isMobileReportOpen || reportStep === 'form'}
+                    isHidden={isDonateModalOpen || isMobileReportOpen || reportStep === 'form' || !!selectedIssue}
                     issueCounts={issueCounts}
                 />
             )}
