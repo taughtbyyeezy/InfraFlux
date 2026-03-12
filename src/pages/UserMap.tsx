@@ -25,6 +25,7 @@ import {
     ReportForm
 } from '../components';
 import { DonateModal } from '../components/ui/DonateModal';
+import { DesktopBlock } from '../components/ui/DesktopBlock';
 
 
 const sector18Center: [number, number] = [28.1711, 76.6211];
@@ -55,6 +56,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [adminPassword, setAdminPassword] = useState(sessionStorage.getItem('admin_password') || '');
     const [loginPasswordInput, setLoginPasswordInput] = useState('');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
+    const isActuallyMobile = useMemo(() => {
+        const userAgent = navigator.userAgent || "";
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    }, []);
+    const showBlock = !isAdmin && !isActuallyMobile;
     const [votingIssueId, setVotingIssueId] = useState<string | null>(null);
     const [votingType, setVotingType] = useState<'true' | 'false' | null>(null);
     const [locateTrigger, setLocateTrigger] = useState(0);
@@ -102,7 +108,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    // Window resize handler
+    // Window resize handler for Layout only
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 767);
         window.addEventListener('resize', handleResize);
@@ -201,6 +207,33 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             return;
         }
 
+        // GPS Proximity Guard for Incentive Program
+        if (userLocation && reportForm.location) {
+            const [uLat, uLng] = userLocation;
+            const [mLat, mLng] = reportForm.location;
+
+            // Haversine distance calculation (simple approximation)
+            const R = 6371e3; // metres
+            const φ1 = uLat * Math.PI / 180;
+            const φ2 = mLat * Math.PI / 180;
+            const Δφ = (mLat - uLat) * Math.PI / 180;
+            const Δλ = (mLng - uLng) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c; // in metres
+
+            if (distance > 100) { // 100 meters threshold
+                addToast('Report marker is too far from your actual location. Please report on-site.', 'error');
+                return;
+            }
+        } else if (!userLocation) {
+            addToast('Real-time GPS location is required to verify your report for rewards.', 'warning');
+            return;
+        }
+
         let finalImageUrl = '';
 
         setIsSubmitting(true);
@@ -296,7 +329,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             } else {
                 setUploadProgress(0);
                 const data = await response.json().catch(() => ({}));
-                addToast(`Failed to submit report: ${data.error || 'Server error'}`, 'error');
+                if (response.status === 429) {
+                    addToast(data.error || 'Rate limit reached. Please try again later.', 'warning');
+                } else {
+                    addToast(`Failed to submit report: ${data.error || 'Server error'}`, 'error');
+                }
             }
         } catch (error) {
             console.error('Failed to report issue:', error);
@@ -650,6 +687,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     }}
                     isHidden={isDonateModalOpen || isMobileReportOpen || reportStep === 'form' || !!selectedIssue}
                     issueCounts={issueCounts}
+                    voterId={getVoterId()}
                 />
             )}
 
@@ -849,16 +887,20 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         height={0.45}
                         modal={false}
                     >
-                        <ReportForm
-                            formData={reportForm}
-                            onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
-                            onSubmit={handleReport}
-                            onCancel={handleCancelReport}
-                            onGetLocation={handleGetCurrentLocation}
-                            isMobile={isMobile}
-                            uploadProgress={uploadProgress}
-                            isSubmitting={isSubmitting}
-                        />
+                        {showBlock ? (
+                            <DesktopBlock onClose={handleCancelReport} />
+                        ) : (
+                            <ReportForm
+                                formData={reportForm}
+                                onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
+                                onSubmit={handleReport}
+                                onCancel={handleCancelReport}
+                                onGetLocation={handleGetCurrentLocation}
+                                isMobile={isMobile}
+                                uploadProgress={uploadProgress}
+                                isSubmitting={isSubmitting}
+                            />
+                        )}
                     </MobileBottomPanel>
                 )
             }
@@ -913,16 +955,20 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             {
                 !isMobile && reportStep === 'form' && (
                     <div className="detail-sidebar report-sidebar open">
-                        <ReportForm
-                            formData={reportForm}
-                            onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
-                            onSubmit={handleReport}
-                            onCancel={handleCancelReport}
-                            onGetLocation={handleGetCurrentLocation}
-                            isMobile={isMobile}
-                            uploadProgress={uploadProgress}
-                            isSubmitting={isSubmitting}
-                        />
+                        {showBlock ? (
+                            <DesktopBlock onClose={handleCancelReport} />
+                        ) : (
+                            <ReportForm
+                                formData={reportForm}
+                                onChange={(data) => setReportForm(prev => ({ ...prev, ...data }))}
+                                onSubmit={handleReport}
+                                onCancel={handleCancelReport}
+                                onGetLocation={handleGetCurrentLocation}
+                                isMobile={isMobile}
+                                uploadProgress={uploadProgress}
+                                isSubmitting={isSubmitting}
+                            />
+                        )}
                     </div>
                 )
             }

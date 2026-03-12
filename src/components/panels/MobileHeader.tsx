@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun, Heart, X } from 'lucide-react';
+import { Moon, Sun, Heart, X, Copy } from 'lucide-react';
 import { hapticButton } from '../../utils/haptic';
 
 interface MobileHeaderProps {
@@ -12,6 +12,7 @@ interface MobileHeaderProps {
     onDonateClick?: () => void;
     isHidden?: boolean;
     issueCounts: Record<string, number>;
+    voterId?: string;
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
@@ -23,8 +24,29 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
     onThemeToggle,
     onDonateClick,
     isHidden = false,
-    issueCounts
+    issueCounts,
+    voterId
 }) => {
+    const copyToClipboard = (text: string) => {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+            hapticButton();
+        } else {
+            // Fallback for non-secure contexts
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                hapticButton();
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
+    };
+
     return (
         <>
             <div className={`mobile-header ${isHidden ? 'hidden-for-support' : ''}`}>
@@ -129,6 +151,33 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                             )}
                         </div>
                     </div>
+
+                    {voterId && (
+                        <div className="menu-section" style={{ marginTop: '1rem' }}>
+                            <div className="menu-label">REWARDS PROGRAM</div>
+                            <div className="reward-id-card">
+                                <div className="reward-id-header">
+                                    <Heart size={16} fill="currentColor" />
+                                    <span>Reward Payout ID</span>
+                                </div>
+                                <div className="reward-id-box">
+                                    <span className="reward-id-value">
+                                        {voterId.substring(0, 8)}...
+                                    </span>
+                                    <button
+                                        className="reward-id-copy"
+                                        onClick={() => copyToClipboard(voterId)}
+                                        aria-label="Copy Reward ID"
+                                    >
+                                        <Copy size={16} />
+                                    </button>
+                                </div>
+                                <p className="reward-id-info">
+                                    This anonymous ID is stored locally on your device to track your 10 reports and prevent duplicate payouts.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

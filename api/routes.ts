@@ -137,13 +137,12 @@ router.get('/map-state', async (req: Request, res: Response) => {
     const targetTime = timestamp ? new Date(timestamp as string) : new Date();
 
     try {
-const sql = `
+        const sql = `
       SELECT 
         i.id,
         i.type,
         ST_Y(i.geom::geometry) as lat,
         ST_X(i.geom::geometry) as lng,
-        i.reported_by,
         i.created_at as "createdAt",
         i.approved,
         i.votes_true,
@@ -215,6 +214,7 @@ const sql = `
     }
 });
 
+
 // POST /api/report
 router.post('/report', async (req: Request, res: Response) => {
     const validation = IssueReportSchema.safeParse(req.body);
@@ -225,23 +225,35 @@ router.post('/report', async (req: Request, res: Response) => {
     const { type, location, reportedBy, status, note: rawNote, imageUrl, magnitude, honeypot, userLocation } = validation.data;
     const note = rawNote ? sanitizeHTML(rawNote) : undefined;
 
-    // 1. Honeypot check
+    // 1. User-Agent Mobile Verification for Incentive Program
+    const userAgent = req.headers['user-agent'] || '';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    // We allow overrides for development, but for production incentive security, mobile is required
+    if (!isMobile && process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ error: 'Verified reporting is only available on mobile devices.' });
+    }
+
+    // 2. Honeypot check
     if (honeypot) {
         return res.status(400).json({ error: 'Bot detected' });
     }
 
-// 2. Geofencing check (if user provided GPS)
+    // 3. Geofencing check (Strict 500m limit for incentives)
     const [lat, lng] = location;
     if (userLocation) {
         const distance = getDistance(userLocation[0], userLocation[1], lat, lng);
-        if (distance > 5) { // 5km threshold
+        if (distance > 0.5) { // 500 meters threshold
             return res.status(400).json({
-                error: 'Geofencing failed: Report location is too far from your current GPS position.'
+                error: 'Geofencing failed: Report marker must be within 500m of your real-time GPS location.'
             });
         }
+    } else if (process.env.NODE_ENV === 'production') {
+        // Require userLocation for verified reports in production
+        return res.status(400).json({ error: 'Real-time GPS location is required for verified reporting.' });
     }
 
-    // 3. Lookup MLA at report location
+    // 4. Lookup MLA at report location
     let reportedMLA = { mla_name: null, party: null, ac_name: null, st_name: null, dist_name: null };
     try {
         const mlaResult = await query(`
@@ -262,7 +274,7 @@ router.post('/report', async (req: Request, res: Response) => {
         // Start transaction
         await query('BEGIN');
 
-// 1. Insert Issue with 1 initial vote from creator
+        // 1. Insert Issue with 1 initial vote from creator
         const issueResult = await query(
             `INSERT INTO issues (type, geom, reported_by, magnitude, votes_true, reported_mla_name, reported_mla_party, reported_ac_name, reported_st_name, reported_dist_name) 
              VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, $7, $8, $9, $10, $11) 

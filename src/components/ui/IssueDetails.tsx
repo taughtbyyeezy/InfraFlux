@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Clock, AlertTriangle, ExternalLink, Maximize2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { InfrastructureIssue } from '../../types';
 
@@ -190,10 +190,36 @@ export const IssueDetails: React.FC<IssueDetailsProps> = ({ issue, magnitudeLabe
                                         const target = e.target as HTMLImageElement;
                                         target.style.display = 'none';
                                         if (target.nextSibling) {
-                                            (target.nextSibling as HTMLElement).style.display = 'flex';
+                                            (target.nextSibling as HTMLAnchorElement).style.display = 'none';
+                                            (target.nextSibling.nextSibling as HTMLElement).style.display = 'flex';
                                         }
                                     }}
                                 />
+                                <a
+                                    href={img}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: '8px',
+                                        right: '8px',
+                                        background: 'rgba(0, 0, 0, 0.5)',
+                                        backdropFilter: 'blur(4px)',
+                                        color: 'white',
+                                        padding: '6px',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                        zIndex: 5,
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    className="image-expand-btn"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Maximize2 size={16} />
+                                </a>
                                 <div style={{
                                     display: 'none',
                                     flexDirection: 'column',
