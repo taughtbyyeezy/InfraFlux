@@ -223,7 +223,8 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
                     xhr.upload.addEventListener('progress', (event) => {
                         if (event.lengthComputable) {
-                            const percent = Math.round((event.loaded / event.total) * 100);
+                            // Map real upload (0-100) to (0-90)
+                            const percent = Math.round((event.loaded / event.total) * 90);
                             setUploadProgress(percent);
                         }
                     });
@@ -232,6 +233,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         try {
                             const result = JSON.parse(xhr.responseText);
                             if (result.success) {
+                                setUploadProgress(90);
                                 resolve(result.data.url);
                             } else {
                                 reject(new Error(result.error?.message || 'Upload failed'));
@@ -247,7 +249,18 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     xhr.open('POST', `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`);
                     xhr.send(formData);
                 });
+            } else {
+                setUploadProgress(10); // Start at 10% if no image
             }
+
+            // Start Artificial Crawl (90% to 99%)
+            const crawlInterval = setInterval(() => {
+                setUploadProgress(prev => {
+                    if (prev < 99) return prev + 1;
+                    clearInterval(crawlInterval);
+                    return prev;
+                });
+            }, 300); // Crawl 1% every 300ms
 
             const response = await fetch(`${baseUrl}/api/report`, {
                 method: 'POST',
@@ -263,18 +276,25 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     ...(userLocation ? { userLocation: userLocation } : {})
                 })
             });
+
+            clearInterval(crawlInterval);
+
             if (response.ok) {
-                setReportStep(null);
-                setIsMobileReportOpen(false);
-                setReportForm({
-                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null,
-                    mla_name: undefined, party: undefined, ac_name: undefined, st_name: undefined
-                });
-                setUploadProgress(0);
-                fetchMapState(new Date());
-                hapticSuccess();
-                addToast('Issue reported successfully!', 'success');
+                setUploadProgress(100);
+                setTimeout(() => {
+                    setReportStep(null);
+                    setIsMobileReportOpen(false);
+                    setReportForm({
+                        type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null,
+                        mla_name: undefined, party: undefined, ac_name: undefined, st_name: undefined
+                    });
+                    setUploadProgress(0);
+                    fetchMapState(new Date());
+                    hapticSuccess();
+                    addToast('Issue reported successfully!', 'success');
+                }, 400); // Short delay to show 100% completion
             } else {
+                setUploadProgress(0);
                 const data = await response.json().catch(() => ({}));
                 addToast(`Failed to submit report: ${data.error || 'Server error'}`, 'error');
             }
