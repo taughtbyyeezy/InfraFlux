@@ -11,8 +11,8 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
     const [copied, setCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<'upi' | 'crypto'>('upi');
     
-    const upiId = "work@progress";
-    const cryptoAddress = "work@progress";
+    const upiId = "abhish.72@okhdfcbank";
+    const cryptoAddress = "1EAWjJ1oHCTPBWJxH3UYCzsqGDyCjrxP9e";
 
     const copyToClipboard = (text: string) => {
         hapticButton();
@@ -64,7 +64,11 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
                 <div className="support-modal-qr">
                     <div className="support-qr-frame">
                         <div className="support-qr-placeholder">
-                            <img src="/logo/infraFLUX_black_bohme_mid.png" alt="QR" className="support-qr-logo" />
+                            <img 
+                                src={activeTab === 'upi' ? "/qr_upi.png" : "/qr_btc.png"} 
+                                alt="QR Code" 
+                                className="support-qr-image" 
+                            />
                         </div>
                     </div>
                 </div>
