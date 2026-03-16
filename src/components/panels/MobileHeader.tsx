@@ -154,13 +154,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
                     {voterId && (
                         <div className="menu-section" style={{ marginTop: '1rem' }}>
-                            <div className="menu-label">REWARDS PROGRAM</div>
-                            <div className="reward-id-card">
-                                <div className="reward-id-header">
-                                    <Heart size={16} fill="currentColor" />
-                                    <span>Reward Payout ID</span>
-                                </div>
-                                <div className="reward-id-box">
+                            <div className="menu-label">REWARDS PAYOUT ID</div>
+                                <div className="reward-id-box" style={{ marginTop: '0.5rem' }}>
                                     <span className="reward-id-value">
                                         {voterId.substring(0, 8)}...
                                     </span>
@@ -172,10 +167,9 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                                         <Copy size={16} />
                                     </button>
                                 </div>
-                                <p className="reward-id-info">
+                                <p className="reward-id-info" style={{ marginTop: '0.5rem' }}>
                                     This anonymous ID is stored locally on your device to track your 10 reports and prevent duplicate payouts.
                                 </p>
-                            </div>
                         </div>
                     )}
                 </div>

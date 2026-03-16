@@ -837,7 +837,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 isMobile && selectedIssue && !reportStep && (
                     <MobileBottomPanel
                         onClose={() => setSelectedIssue(null)}
-                        height={0.45}
+                        height={0.5}
                         modal={true}
                     >
                         <div className="mobile-issue-details">
@@ -885,7 +885,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 isMobileReportOpen && (
                     <MobileBottomPanel
                         onClose={handleCancelReport}
-                        height={0.45}
+                        height={0.5}
                         modal={false}
                     >
                         {showBlock ? (

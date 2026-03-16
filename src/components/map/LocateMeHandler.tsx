@@ -30,9 +30,9 @@ export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({
         // 1. Project the GPS point to absolute pixel coordinates at the target zoom level
         const projectedPoint = map.project(latlng, targetZoom);
 
-        // 2. Adjust for the visual offset (move camera 25% "down" the screen)
+        // 2. Adjust for the visual offset (move camera 25% + 15px "down" the screen to account for 50% + 30px panel)
         const containerHeight = map.getSize().y;
-        const offsetPoint = L.point(projectedPoint.x, projectedPoint.y + (containerHeight * 0.25));
+        const offsetPoint = L.point(projectedPoint.x, projectedPoint.y + (containerHeight * 0.25) + 15);
 
         // 3. Unproject back to GPS coordinates
         const targetLatLng = map.unproject(offsetPoint, targetZoom);
