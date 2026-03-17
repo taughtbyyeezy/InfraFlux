@@ -1,13 +1,57 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Skeleton.css';
+
+// lines_3 from cli-loaders
+const lines_3 = {
+  speed: 130,
+  keyframes: ["-", "\\", "|", "/"]
+};
+
+type SpinnerProps = {
+  className?: string;
+  style?: React.CSSProperties;
+};
+
+export const Spinner: React.FC<SpinnerProps> = ({ className, style }) => {
+  const [currentFrame, setCurrentFrame] = useState(lines_3.keyframes[0]);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    indexRef.current = 0;
+    const interval = setInterval(() => {
+      indexRef.current = (indexRef.current + 1) % lines_3.keyframes.length;
+      setCurrentFrame(lines_3.keyframes[indexRef.current]);
+    }, lines_3.speed);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      display: 'inline-flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '1.5em',
+      height: '1.5em',
+      fontFamily: '"Courier New", Courier, monospace',
+      fontWeight: 'bold',
+      fontSize: '1.2em',
+      overflow: 'hidden',
+      position: 'relative',
+      ...style
+    }} className={className} aria-hidden="true">
+      {currentFrame}
+    </div>
+  );
+};
 
 export const SkeletonText: React.FC<{ width?: string; lines?: number }> = ({ width = '100%', lines = 1 }) => {
   return (
     <>
       {Array.from({ length: lines }).map((_, i) => (
-        <div 
-          key={i} 
-          className="skeleton skeleton-text" 
+        <div
+          key={i}
+          className="skeleton skeleton-text"
           style={{ width: i === lines - 1 ? width : '100%' }}
         />
       ))}
@@ -21,8 +65,8 @@ export const SkeletonTitle: React.FC<{ width?: string }> = ({ width = '60%' }) =
 
 export const SkeletonCircle: React.FC<{ size?: number }> = ({ size = 40 }) => {
   return (
-    <div 
-      className="skeleton skeleton-circle" 
+    <div
+      className="skeleton skeleton-circle"
       style={{ width: size, height: size }}
     />
   );
@@ -51,14 +95,28 @@ export const SkeletonInfoRow: React.FC = () => {
 
 interface MapLoadingOverlayProps {
   message?: string;
+  theme?: 'light' | 'dark';
+  isLoading?: boolean;
 }
 
-export const MapLoadingOverlay: React.FC<MapLoadingOverlayProps> = ({ message = 'Loading map data...' }) => {
+export const MapLoadingOverlay: React.FC<MapLoadingOverlayProps> = ({
+  message = 'Loading map data...',
+  theme = 'dark',
+  isLoading = true
+}) => {
   return (
-    <div className="skeleton-map-overlay">
+    <div
+      className="skeleton-map-overlay"
+      style={{
+        opacity: isLoading ? 1 : 0,
+        pointerEvents: isLoading ? 'auto' : 'none',
+        transition: 'opacity 0.4s ease'
+      }}
+    >
       <div className="skeleton-loader">
-        <div className="skeleton-spinner" />
-        <span className="skeleton-loader-text">{message}</span>
+        <Spinner
+          style={{ color: theme === 'light' ? '#000000' : '#FFFFFF', fontSize: '3rem' }}
+        />
       </div>
     </div>
   );
@@ -85,13 +143,13 @@ export const AdminListSkeleton: React.FC<{ count?: number }> = ({ count = 5 }) =
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          background: 'rgba(255,255,255,0.05)', 
-          padding: '1rem', 
-          borderRadius: '8px', 
+        <div key={i} style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'rgba(255,255,255,0.05)',
+          padding: '1rem',
+          borderRadius: '8px',
           border: '1px solid rgba(255,255,255,0.1)',
           marginBottom: '0.75rem'
         }}>

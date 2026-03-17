@@ -1,4 +1,3 @@
-import React from 'react';
 import { Moon, Sun, Heart, X, Copy } from 'lucide-react';
 import { hapticButton } from '../../utils/haptic';
 
@@ -11,6 +10,7 @@ interface MobileHeaderProps {
     onThemeToggle: () => void;
     onDonateClick?: () => void;
     isHidden?: boolean;
+    isLoading?: boolean;
     issueCounts: Record<string, number>;
     voterId?: string;
 }
@@ -24,6 +24,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
     onThemeToggle,
     onDonateClick,
     isHidden = false,
+    isLoading = false,
     issueCounts,
     voterId
 }) => {
@@ -47,32 +48,44 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         }
     };
 
+    // Determine visibility for the CSS transition
+    const isVisible = !isLoading && !isHidden;
+
     return (
         <>
-            <div className={`mobile-header ${isHidden ? 'hidden-for-support' : ''}`}>
-                <div className="mobile-logo">
-                    <img
-                        src={theme === 'light' ? '/infrafluxwhite.png' : '/infrafluxblack.png'}
-                        alt="InfraFlux Logo"
-                    />
-                </div>
+            <div className={`mobile-header ${isHidden ? 'hidden-for-support' : ''} ${isLoading ? 'is-loading' : ''}`}>
+                
+                {/* 1. Stationary Brand: Immediately visible, remains stationary */}
                 <div className="mobile-logo-typeface">
                     <img
                         src={theme === 'light' ? '/logo/infraFLUX_black_bohme_mid.png' : '/logo/infraFLUX_white_bohme_mid.png'}
                         alt="InfraFlux"
                     />
                 </div>
-                <button
-                    className={`mobile-hamburger ${isMenuOpen ? 'active' : ''}`}
-                    onClick={() => {
-                        hapticButton();
-                        onMenuToggle();
-                    }}
-                >
-                    <div className="hamburger-line"></div>
-                    <div className="hamburger-line"></div>
-                    <div className="hamburger-line"></div>
-                </button>
+
+                {/* 2. Unified Bundle: Background, Logo Icon, and Hamburger move as one entity via CSS */}
+                <div className={`mobile-header-bundle ${isVisible ? 'reveal' : ''}`}>
+                    <div className="mobile-header-bg-bar"></div>
+
+                    <div className="mobile-logo">
+                        <img
+                            src={theme === 'light' ? '/infrafluxwhite.png' : '/infrafluxblack.png'}
+                            alt="InfraFlux Logo"
+                        />
+                    </div>
+
+                    <button
+                        className={`mobile-hamburger ${isMenuOpen ? 'active' : ''}`}
+                        onClick={() => {
+                            hapticButton();
+                            onMenuToggle();
+                        }}
+                    >
+                        <div className="hamburger-line"></div>
+                        <div className="hamburger-line"></div>
+                        <div className="hamburger-line"></div>
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Dropdown Menu (Android/Material Style) */}
@@ -177,4 +190,3 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         </>
     );
 };
-

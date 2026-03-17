@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { InfrastructureIssue, IssueType } from '../types';
 import { Navigation, PlusCircle, Sun, Moon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clusterIssues } from '../utils/clustering';
 import { getVoterId } from '../utils/voterId';
 import { useToast } from '../contexts/ToastContext';
@@ -40,7 +41,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [issues, setIssues] = useState<InfrastructureIssue[]>([]);
     const [selectedIssue, setSelectedIssue] = useState<InfrastructureIssue | null>(null);
     const [zoom, setZoom] = useState(16);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [reportStep, setReportStep] = useState<'form' | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['pothole', 'water_logging', 'garbage_dump']);
@@ -120,15 +121,22 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     // Fetch map data
     const fetchMapState = async (time: Date) => {
         setIsLoading(true);
+        const minDelay = new Promise(resolve => setTimeout(resolve, 1000));
         try {
-            const response = await fetch(`${baseUrl}/api/map-state?timestamp=${time.toISOString()}`);
-            const data = await response.json();
+            const fetchPromise = (async () => {
+                const response = await fetch(`${baseUrl}/api/map-state?timestamp=${time.toISOString()}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })();
+
+            const [data] = await Promise.all([fetchPromise as Promise<any>, minDelay]);
             setIssues(Array.isArray(data.issues) ? data.issues : []);
 
             // IP-based centering removed to prioritize Rewari default
         } catch (error) {
             console.error('Failed to fetch map state:', error);
             addToast('Failed to fetch map data', 'error');
+            await minDelay;
         } finally {
             setIsLoading(false);
         }
@@ -624,50 +632,56 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             />
 
             {/* Fixed Logo for Desktop */}
-            <div className="desktop-logo-fixed">
-                <div className="logo-icon">
-                    <img
-                        src={theme === 'light' ? '/infrafluxwhite.png' : '/infrafluxblack.png'}
-                        alt="InfraFlux Logo"
-                    />
-                </div>
-                <div className="logo-text-wrapper">
-                    <div className="logo-text">
+            {!isLoading && (
+                <div className="desktop-logo-fixed">
+                    <div className="logo-icon">
                         <img
-                            src={theme === 'light' ? '/logo/infraFLUX_black_bohme_mid.png' : '/logo/infraFLUX_white_bohme_mid.png'}
-                            alt="InfraFlux"
+                            src={theme === 'light' ? '/infrafluxwhite.png' : '/infrafluxblack.png'}
+                            alt="InfraFlux Logo"
                         />
                     </div>
+                    <div className="logo-text-wrapper">
+                        <div className="logo-text">
+                            <img
+                                src={theme === 'light' ? '/logo/infraFLUX_black_bohme_mid.png' : '/logo/infraFLUX_white_bohme_mid.png'}
+                                alt="InfraFlux"
+                            />
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Floating Hamburger */}
-            <button
-                className={`floating-hamburger ${isMenuOpen ? 'active' : ''}`}
-                onClick={() => {
-                    hapticButton();
-                    setIsMenuOpen(!isMenuOpen);
-                }}
-                style={{ zIndex: 4001 }}
-            >
-                <div className="hamburger-line"></div>
-                <div className="hamburger-line"></div>
-                <div className="hamburger-line"></div>
-            </button>
+            {!isLoading && (
+                <button
+                    className={`floating-hamburger ${isMenuOpen ? 'active' : ''}`}
+                    onClick={() => {
+                        hapticButton();
+                        setIsMenuOpen(!isMenuOpen);
+                    }}
+                    style={{ zIndex: 4001 }}
+                >
+                    <div className="hamburger-line"></div>
+                    <div className="hamburger-line"></div>
+                    <div className="hamburger-line"></div>
+                </button>
+            )}
 
             {/* Desktop Theme Toggle */}
-            <button
-                className="theme-toggle-desktop"
-                onClick={() => {
-                    hapticButton();
-                    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-                }}
-                title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
-            >
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
+            {!isLoading && (
+                <button
+                    className="theme-toggle-desktop"
+                    onClick={() => {
+                        hapticButton();
+                        setTheme(prev => prev === 'light' ? 'dark' : 'light');
+                    }}
+                    title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
+                >
+                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                </button>
+            )}
 
-            {/* Mobile Header with Logo and Hamburger - Always visible on mobile */}
+            {/* Mobile Header - Transitioned via CSS for unified "entity" movement */}
             {isMobile && (
                 <MobileHeader
                     theme={theme}
@@ -686,6 +700,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         setIsDonateModalOpen(true);
                     }}
                     isHidden={isDonateModalOpen || isMobileReportOpen || reportStep === 'form' || !!selectedIssue}
+                    isLoading={isLoading}
                     issueCounts={issueCounts}
                     voterId={getVoterId()}
                 />
@@ -793,44 +808,52 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         />
                     )}
                 </MapContainer>
-                {isLoading && <MapLoadingOverlay />}
+                <MapLoadingOverlay isLoading={isLoading} theme={theme as 'light' | 'dark'} />
             </div>
 
             {/* Mobile Bottom Bar */}
-            {
-                (!selectedIssue && !reportStep && !isMobileReportOpen) && (
-                    <div className={`mobile-bottom-bar ${isDonateModalOpen ? 'hidden-for-support' : ''}`}>
-                        <button
-                            type="button"
-                            className="mobile-report-btn"
-                            onClick={() => {
-                                hapticButton();
-                                setSelectedIssue(null);
-                                setReportStep(null);
-                                setIsMobileReportOpen(true);
-                                setReportForm({
-                                    type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null,
-                                    mla_name: undefined, party: undefined, ac_name: undefined, st_name: undefined
-                                });
-                            }}
-                        >
-                            <PlusCircle size={18} />
-                            <span>REPORT ISSUE</span>
-                        </button>
-                        <button
-                            type="button"
-                            className="mobile-locate-btn"
-                            onClick={() => {
-                                hapticButton();
-                                handleLocateMe();
-                            }}
-                            aria-label="Locate me"
-                        >
-                            <Navigation size={18} />
-                        </button>
-                    </div>
-                )
-            }
+            <AnimatePresence>
+                {(!selectedIssue && !reportStep && !isMobileReportOpen && !isLoading) && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        transition={{ duration: 0.5, ease: "linear" }}
+                        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 1000 }}
+                    >
+                        <div className={`mobile-bottom-bar ${isDonateModalOpen ? 'hidden-for-support' : ''}`}>
+                            <button
+                                type="button"
+                                className="mobile-report-btn"
+                                onClick={() => {
+                                    hapticButton();
+                                    setSelectedIssue(null);
+                                    setReportStep(null);
+                                    setIsMobileReportOpen(true);
+                                    setReportForm({
+                                        type: 'pothole', note: '', imageUrl: '', imageFile: null, location: null, magnitude: 5, honeypot: '', userLocation: null,
+                                        mla_name: undefined, party: undefined, ac_name: undefined, st_name: undefined
+                                    });
+                                }}
+                            >
+                                <PlusCircle size={18} />
+                                <span>REPORT ISSUE</span>
+                            </button>
+                            <button
+                                type="button"
+                                className="mobile-locate-btn"
+                                onClick={() => {
+                                    hapticButton();
+                                    handleLocateMe();
+                                }}
+                                aria-label="Locate me"
+                            >
+                                <Navigation size={18} />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Mobile Issue Details Panel */}
             {
