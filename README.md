@@ -8,7 +8,7 @@
 
 ## ✨ Key Features
 
-- **Real-Time Interactive Map**: Powered by **Leaflet** and **Stadia Maps Alidade Smooth Dark**, offering a premium charcoal-themed navigation experience.
+- **Real-Time Interactive Map**: Powered by **MapLibre GL** and **CARTO raster tiles**, offering a premium globe projection experience.
 - **Dynamic Reporting**: Fast, glassmorphism-inspired UI for reporting issues with:
   - **Photo Evidence**: Integrated image compression and eager background processing.
   - **Precision Location**: One-tap "Locate Me" and manual map-pick functionality.
@@ -24,7 +24,7 @@
 ## 🛠️ Tech Stack
 
 - **Frontend**: React (Vite), TypeScript, Tailwind CSS (Vanilla CSS Overrides), Framer Motion.
-- **Mapping**: Leaflet, React Leaflet, Stadia Maps.
+- **Mapping**: MapLibre GL JS, CARTO raster tiles.
 - **Backend**: Node.js, Express.
 - **Database**: PostgreSQL with PostGIS for spatial queries.
 - **Image Hosting**: ImgBB API Integration.

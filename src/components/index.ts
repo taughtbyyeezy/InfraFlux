@@ -1,11 +1,10 @@
 // Map Components
-export { MapUpdater } from './map/MapUpdater';
+export { MapFlyIn } from './map/MapFlyIn';
 export { ZoomHandler } from './map/ZoomHandler';
 export { MapRegister } from './map/MapRegister';
 export { MapClickHandler } from './map/MapClickHandler';
 export { LocateMeHandler } from './map/LocateMeHandler';
-export { ScalingMarkers } from './map/ScalingMarkers';
-export { getIcon, getSelectedLocationIcon } from './map/MapIcons';
+export { IssuesLayer } from './map/IssuesLayer';
 
 // Panel Components
 export { MobileBottomPanel } from './panels/MobileBottomPanel';

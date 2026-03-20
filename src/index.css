@@ -45,6 +45,8 @@
   --glass-border: rgba(0, 0, 0, 0.1);
   --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.3);
   --glass-refraction: rgba(0, 0, 0, 0.01);
+  --skeleton-base: rgba(0, 0, 0, 0.06);
+  --skeleton-shine: rgba(0, 0, 0, 0.12);
   --btn-text: #ffffff;
   --filter-active-bg: rgba(0, 0, 0, 0.02);
   --filter-dot-shadow: none;
@@ -96,6 +98,8 @@
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.1);
   --glass-refraction: rgba(255, 255, 255, 0.05);
+  --skeleton-base: rgba(255, 255, 255, 0.06);
+  --skeleton-shine: rgba(255, 255, 255, 0.12);
   --btn-text: #ffffff;
   --filter-active-bg: rgba(0, 122, 255, 0.05);
   --filter-sky: #38bdf8;
@@ -130,7 +134,7 @@
   color-scheme: dark;
 }
 
-.dark-theme .leaflet-container {
+.dark-theme .maplibregl-map {
   filter: brightness(1.2) contrast(0.85);
 }
 
@@ -256,7 +260,7 @@ body {
   overflow: hidden;
 }
 
-.leaflet-container {
+.maplibregl-map {
   height: 100%;
   width: 100%;
   background: var(--bg-dark) !important;
@@ -883,6 +887,40 @@ body {
   letter-spacing: 0.1rem;
 }
 
+/* Skeleton blocks for jurisdiction card loading state */
+.skeleton-block {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-shine) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-block-wide {
+  height: 1rem;
+  width: 70%;
+  margin-bottom: 6px;
+}
+
+.skeleton-block-med {
+  height: 0.75rem;
+  width: 50%;
+}
+
+.skeleton-block-sm {
+  height: 0.9rem;
+  width: 40%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .badge-party-label {
   font-size: 0.7rem;
   font-weight: 600;
@@ -1160,13 +1198,24 @@ body {
   border: none !important;
 }
 
-/* Leaflet Overrides */
-.leaflet-control-attribution {
+/* MapLibre Overrides */
+.maplibregl-ctrl-attrib {
   display: none !important;
 }
 
-.leaflet-tile-pane {
+.maplibregl-canvas {
   filter: saturate(0.8) brightness(0.9);
+}
+
+/* MapLibre Marker Root */
+.mapcn-marker-root {
+  cursor: pointer;
+}
+
+.mapcn-marker-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Selected Location Marker Pulse Animation */

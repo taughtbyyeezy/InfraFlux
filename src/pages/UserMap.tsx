@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import L from 'leaflet';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { InfrastructureIssue, IssueType } from '../types';
 import { Navigation, PlusCircle, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clusterIssues } from '../utils/clustering';
 import { getVoterId } from '../utils/voterId';
 import { useToast } from '../contexts/ToastContext';
 import { MapLoadingOverlay } from '../components/Skeleton';
 import { hapticButton, hapticSuccess } from '../utils/haptic';
+import { Map, MapMarker, MarkerContent, useMap } from '../components/ui/MapLibre';
 import {
-    MapUpdater,
     ZoomHandler,
     MapRegister,
     MapClickHandler,
     LocateMeHandler,
-    ScalingMarkers,
-    getSelectedLocationIcon,
+    MapFlyIn,
+    IssuesLayer,
     MobileBottomPanel,
     FilterSidebar,
     MobileHeader,
@@ -35,17 +34,27 @@ interface UserMapProps {
     isAdmin?: boolean;
 }
 
+const ISSUE_MARKER_COLORS: Record<string, { bg: string; glow: string; glowStrong: string }> = {
+    pothole: { bg: '#ef4444', glow: '#ef444466', glowStrong: '#ef4444cc' },
+    water_logging: { bg: '#3b82f6', glow: '#3b82f666', glowStrong: '#3b82f6cc' },
+    garbage_dump: { bg: '#fbbf24', glow: '#fbbf2466', glowStrong: '#fbbf24cc' },
+    streetlight: { bg: '#8b5cf6', glow: '#8b5cf666', glowStrong: '#8b5cf6cc' },
+};
+
+const getMarkerColor = (type: IssueType | string) =>
+    ISSUE_MARKER_COLORS[type] || { bg: '#ef4444', glow: '#ef444466', glowStrong: '#ef4444cc' };
+
 const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const { addToast } = useToast();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [issues, setIssues] = useState<InfrastructureIssue[]>([]);
     const [selectedIssue, setSelectedIssue] = useState<InfrastructureIssue | null>(null);
-    const [zoom, setZoom] = useState(16);
+    const [zoom, setZoom] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [reportStep, setReportStep] = useState<'form' | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['pothole', 'water_logging', 'garbage_dump']);
-    const [map, setMap] = useState<L.Map | null>(null);
+    const [map, setMap] = useState<maplibregl.Map | null>(null);
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         const saved = localStorage.getItem('theme') as 'light' | 'dark';
         if (saved) return saved;
@@ -353,8 +362,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleVote = async (id: string, voteType: 'true' | 'false') => {
         const issue = issues.find(i => i.id === id);
-        const clusteredIssue = clusteredMarkers.find(i => i.id === id);
-        const targetId = clusteredIssue?.originalId || issue?.id || id;
+        const targetId = issue?.id || id;
 
         setVotingIssueId(id);
         setVotingType(voteType);
@@ -402,8 +410,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleApprove = async (id: string) => {
         const issue = issues.find(i => i.id === id);
-        const clusteredIssue = clusteredMarkers.find(i => i.id === id);
-        const targetId = clusteredIssue?.originalId || issue?.id || id;
+        const targetId = issue?.id || id;
 
         try {
             const secretToUse = adminPassword || import.meta.env.VITE_ADMIN_SECRET || 'admin';
@@ -434,8 +441,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleRemove = async (id: string) => {
         const issue = issues.find(i => i.id === id);
-        const clusteredIssue = clusteredMarkers.find(i => i.id === id);
-        const targetId = clusteredIssue?.originalId || issue?.id || id;
+        const targetId = issue?.id || id;
 
         try {
             const secretToUse = adminPassword || import.meta.env.VITE_ADMIN_SECRET || 'admin';
@@ -560,8 +566,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             issue.status !== 'resolved'
         );
     }, [issues, selectedTypes]);
-
-    const clusteredMarkers = useMemo(() => clusterIssues(filteredIssues), [filteredIssues]);
 
     // Calculate counts for each issue type
     const issueCounts = useMemo(() => {
@@ -708,42 +712,29 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
             {/* Map Container */}
             <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-                <MapContainer
-                    center={sector18Center}
+                <Map
+                    center={[-98.5795, 39.8283]} // Geographic center of US / Americas
                     zoom={zoom}
-                    scrollWheelZoom={true}
-                    zoomControl={false}
-                    maxZoom={18}
-                    minZoom={3}
+                    scrollZoom={true}
+                    maxZoom={20}
                     style={{ height: '100%', width: '100%' }}
-                    preferCanvas={true}
+                    theme={theme}
+                    projection={{ type: 'globe' }}
+                    onViewportChange={(vp) => setZoom(vp.zoom)}
                 >
-                    <TileLayer
-                        url={theme === 'dark'
-                            ? "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
-                            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                        }
-                        keepBuffer={2}
-                        updateWhenIdle={isMobile}
-                    />
-                    <MapUpdater center={sector18Center} />
+                    <MapFlyIn isLoading={isLoading} targetCenter={[20.5937, 78.9629]} targetZoom={4} />
                     <ZoomHandler onZoomChange={setZoom} />
                     <MapRegister setMap={setMap} />
                     <MapClickHandler
                         onMapClick={(loc, point) => {
                             if (!map) return;
 
-                            // Proximity Guard: Check if click is too close to an existing marker (40px)
-                            const isNearMarker = clusteredMarkers.some(issue => {
-                                const markerPoint = map.latLngToContainerPoint(issue.location);
-                                const distance = Math.sqrt(
-                                    Math.pow(point.x - markerPoint.x, 2) +
-                                    Math.pow(point.y - markerPoint.y, 2)
-                                );
-                                return distance < 40;
+                            // Proximity Guard: use MapLibre's rendered features
+                            const mp = new maplibregl.Point(point.x, point.y);
+                            const renderedFeatures = map.queryRenderedFeatures(mp, {
+                                layers: ['issues-unclustered']
                             });
-
-                            if (isNearMarker) return;
+                            if (renderedFeatures.length > 0) return;
 
                             if (isMobile) {
                                 hapticButton();
@@ -764,9 +755,14 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     ac_name: undefined,
                                     st_name: undefined
                                 });
+                                // Trigger focus handler for offset centering
                                 setFocusTrigger(prev => prev + 1);
                             } else if (reportStep === 'form' || isMobileReportOpen) {
                                 setReportForm(prev => ({ ...prev, location: loc }));
+                                // Trigger focus handler for offset centering on mobile
+                                if (isMobile) {
+                                    setFocusTrigger(prev => prev + 1);
+                                }
                             }
                         }}
                         addToast={addToast}
@@ -780,34 +776,47 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         focusTrigger={focusTrigger}
                     />
 
-                    <ScalingMarkers
-                        issues={clusteredMarkers}
+                    <IssuesLayer
+                        issues={filteredIssues}
                         zoom={zoom}
-                        magnitude={5}
                         onSelect={(issue) => {
                             hapticButton();
                             setReportStep(null);
                             setIsMobileReportOpen(false);
                             setSelectedIssue(issue);
                         }}
+                        onZoomChange={setZoom}
                     />
 
                     {reportForm.location && (reportStep === 'form' || isMobileReportOpen) && (
-                        <Marker
-                            key={`selected-${zoom}`}
-                            position={reportForm.location}
-                            icon={getSelectedLocationIcon(reportForm.type, zoom)}
+                        <MapMarker
+                            key="report-marker"
+                            longitude={reportForm.location[1]}
+                            latitude={reportForm.location[0]}
                             draggable={true}
-                            eventHandlers={{
-                                dragend: (e) => {
-                                    const marker = e.target;
-                                    const newPos = marker.getLatLng();
-                                    setReportForm(prev => ({ ...prev, location: [newPos.lat, newPos.lng] }));
+                            onDragEnd={(lngLat) => {
+                                setReportForm(prev => ({ ...prev, location: [lngLat.lat, lngLat.lng] }));
+                                // Trigger focus handler to center marker in visible area
+                                if (isMobile) {
+                                    setFocusTrigger(prev => prev + 1);
                                 }
                             }}
-                        />
+                        >
+                            <MarkerContent className="selected-location-icon">
+                                <div style={{
+                                    background: getMarkerColor(reportForm.type).bg,
+                                    width: 20,
+                                    height: 20,
+                                    borderRadius: '50%',
+                                    border: '3px solid white',
+                                    boxShadow: `0 0 0 4px ${getMarkerColor(reportForm.type).glow}, 0 0 20px ${getMarkerColor(reportForm.type).glowStrong}`,
+                                    animation: 'pulse 2s infinite',
+                                    cursor: 'grab',
+                                }} />
+                            </MarkerContent>
+                        </MapMarker>
                     )}
-                </MapContainer>
+                </Map>
                 <MapLoadingOverlay isLoading={isLoading} theme={theme as 'light' | 'dark'} />
             </div>
 

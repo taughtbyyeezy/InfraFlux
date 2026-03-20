@@ -160,29 +160,40 @@ const DesktopReportForm: React.FC<ReportFormProps & { isUploading: boolean; setI
                     </div>
                 </div>
 
-                {formData.ac_name && (
-                    <div className="form-group animate-in">
-                        <label>REPRESENTATIVE JURISDICTION</label>
-                        <div className="jurisdiction-card">
-                            <div className="jurisdiction-main-info">
-                                <div className="jurisdiction-title">
-                                    {formData.mla_name || 'PENDING...'}
+                <div className="form-group">
+                    <label>REPRESENTATIVE JURISDICTION</label>
+                    <div className={`jurisdiction-card ${!formData.ac_name ? 'jurisdiction-loading' : ''}`}>
+                        {!formData.ac_name ? (
+                            <>
+                                <div className="jurisdiction-main-info">
+                                    <div className="skeleton-block skeleton-block-wide" />
+                                    <div className="skeleton-block skeleton-block-med" />
                                 </div>
-                                <div className="jurisdiction-subtitle">
-                                    {formData.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                <div className="jurisdiction-divider"></div>
+                                <div className="jurisdiction-party-info">
+                                    <div className="skeleton-block skeleton-block-sm" />
                                 </div>
-                            </div>
-
-                            <div className="jurisdiction-divider"></div>
-
-                            <div className="jurisdiction-party-info">
-                                <div className="jurisdiction-party-value">
-                                    {formData.party || 'N/A'}
+                            </>
+                        ) : (
+                            <>
+                                <div className="jurisdiction-main-info">
+                                    <div className="jurisdiction-title">
+                                        {formData.mla_name}
+                                    </div>
+                                    <div className="jurisdiction-subtitle">
+                                        {formData.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                                <div className="jurisdiction-divider"></div>
+                                <div className="jurisdiction-party-info">
+                                    <div className="jurisdiction-party-value">
+                                        {formData.party || 'N/A'}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
-                )}
+                </div>
 
                 <div className="form-group">
                     <label>PHOTO EVIDENCE</label>
@@ -345,29 +356,40 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
                     </div>
                 </div>
 
-                {formData.ac_name && (
-                    <div className="form-group animate-in">
-                        <label>REPRESENTATIVE JURISDICTION</label>
-                        <div className="jurisdiction-card">
-                            <div className="jurisdiction-main-info">
-                                <div className="jurisdiction-title">
-                                    {formData.mla_name || 'PENDING...'}
+                <div className="form-group">
+                    <label>REPRESENTATIVE JURISDICTION</label>
+                    <div className={`jurisdiction-card ${!formData.ac_name ? 'jurisdiction-loading' : ''}`}>
+                        {!formData.ac_name ? (
+                            <>
+                                <div className="jurisdiction-main-info">
+                                    <div className="skeleton-block skeleton-block-wide" />
+                                    <div className="skeleton-block skeleton-block-med" />
                                 </div>
-                                <div className="jurisdiction-subtitle">
-                                    {formData.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                <div className="jurisdiction-divider"></div>
+                                <div className="jurisdiction-party-info">
+                                    <div className="skeleton-block skeleton-block-sm" />
                                 </div>
-                            </div>
-
-                            <div className="jurisdiction-divider"></div>
-
-                            <div className="jurisdiction-party-info">
-                                <div className="jurisdiction-party-value">
-                                    {formData.party || 'N/A'}
+                            </>
+                        ) : (
+                            <>
+                                <div className="jurisdiction-main-info">
+                                    <div className="jurisdiction-title">
+                                        {formData.mla_name}
+                                    </div>
+                                    <div className="jurisdiction-subtitle">
+                                        {formData.ac_name?.replace(/\sAC$/i, '') || 'UNMAPPED'}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                                <div className="jurisdiction-divider"></div>
+                                <div className="jurisdiction-party-info">
+                                    <div className="jurisdiction-party-value">
+                                        {formData.party || 'N/A'}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
-                )}
+                </div>
 
                 <div className="form-group">
                     <label>PHOTO EVIDENCE</label>

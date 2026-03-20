@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
-import { useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { useMap } from '../ui/MapLibre';
+import maplibregl from 'maplibre-gl';
 
 interface MapRegisterProps {
-    setMap: (map: L.Map) => void;
+    setMap: (map: maplibregl.Map) => void;
 }
 
 export const MapRegister: React.FC<MapRegisterProps> = ({ setMap }) => {
-    const map = useMap();
+    const { map, isLoaded } = useMap();
     useEffect(() => {
-        setMap(map);
-    }, [map, setMap]);
+        if (isLoaded && map) {
+            setMap(map);
+        }
+    }, [map, isLoaded, setMap]);
     return null;
 };

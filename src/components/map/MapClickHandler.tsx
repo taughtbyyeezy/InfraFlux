@@ -1,20 +1,35 @@
-import React from 'react';
-import { useMapEvents } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { useMap } from '../ui/MapLibre';
 
 interface MapClickHandlerProps {
-    onMapClick: (latlng: [number, number], point: L.Point) => void;
+    onMapClick: (latlng: [number, number], point: { x: number; y: number }) => void;
     addToast: (message: string, type: 'error' | 'success' | 'warning' | 'info') => void;
 }
 
 export const MapClickHandler: React.FC<MapClickHandlerProps> = ({ onMapClick, addToast }) => {
-    useMapEvents({
-        click: (e) => {
-            onMapClick([e.latlng.lat, e.latlng.lng], e.containerPoint);
-        },
-        locationerror: (e) => {
+    const { map, isLoaded } = useMap();
+
+    useEffect(() => {
+        if (!map || !isLoaded) return;
+
+        const clickHandler = (e: any) => {
+            // e.lngLat has {lng, lat}; e.point has {x, y}
+            onMapClick([e.lngLat.lat, e.lngLat.lng], { x: e.point.x, y: e.point.y });
+        };
+
+        const errorHandler = (e: any) => {
             console.error('Location error:', e.message);
             addToast(`Location access failed: ${e.message}`, 'error');
-        }
-    });
+        };
+
+        map.on('click', clickHandler);
+        map.on('error', errorHandler);
+
+        return () => {
+            map.off('click', clickHandler);
+            map.off('error', errorHandler);
+        };
+    }, [map, isLoaded, onMapClick, addToast]);
+
     return null;
 };

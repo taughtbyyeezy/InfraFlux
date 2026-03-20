@@ -1,0 +1,80 @@
+import { InfrastructureIssue } from '../types';
+
+export const issuesToGeoJSON = (issues: InfrastructureIssue[]): GeoJSON.FeatureCollection => ({
+    type: 'FeatureCollection',
+    features: issues.map(issue => ({
+        type: 'Feature' as const,
+        geometry: {
+            type: 'Point' as const,
+            coordinates: [issue.location[1], issue.location[0]] // [lng, lat]
+        },
+        properties: {
+            id: issue.id,
+            type: issue.type,
+            status: issue.status,
+            loc_lat: issue.location[0],
+            loc_lng: issue.location[1],
+            magnitude: issue.magnitude || 5,
+            approved: issue.approved || false,
+            note: issue.note || '',
+            createdAt: issue.createdAt,
+            resolvedAt: issue.resolvedAt,
+            reportedBy: issue.reportedBy,
+            images: JSON.stringify(issue.images || []),
+            votes_true: issue.votes_true || 0,
+            votes_false: issue.votes_false || 0,
+            resolve_votes: issue.resolve_votes || 0,
+            originalId: issue.originalId || '',
+            // MLA fields
+            reported_mla_name: issue.reported_mla_name || '',
+            reported_mla_party: issue.reported_mla_party || '',
+            reported_ac_name: issue.reported_ac_name || '',
+            reported_st_name: issue.reported_st_name || '',
+            reported_dist_name: issue.reported_dist_name || '',
+            current_mla_name: issue.current_mla_name || '',
+            current_mla_party: issue.current_mla_party || '',
+            current_ac_name: issue.current_ac_name || '',
+            current_st_name: issue.current_st_name || '',
+            current_dist_name: issue.current_dist_name || '',
+            mla_name: issue.mla_name || '',
+            party: issue.party || '',
+            ac_name: issue.ac_name || '',
+            st_name: issue.st_name || '',
+            dist_name: issue.dist_name || '',
+        }
+    }))
+});
+
+export const geoJSONToIssue = (props: Record<string, any>): InfrastructureIssue => ({
+    id: props.id,
+    type: props.type,
+    status: props.status,
+    magnitude: props.magnitude,
+    approved: props.approved,
+    note: props.note,
+    createdAt: props.createdAt,
+    resolvedAt: props.resolvedAt,
+    reportedBy: props.reportedBy,
+    images: JSON.parse(props.images || '[]'),
+    votes_true: props.votes_true,
+    votes_false: props.votes_false,
+    resolve_votes: props.resolve_votes,
+    originalId: props.originalId,
+    reported_mla_name: props.reported_mla_name,
+    reported_mla_party: props.reported_mla_party,
+    reported_ac_name: props.reported_ac_name,
+    reported_st_name: props.reported_st_name,
+    reported_dist_name: props.reported_dist_name,
+    current_mla_name: props.current_mla_name,
+    current_mla_party: props.current_mla_party,
+    current_ac_name: props.current_ac_name,
+    current_st_name: props.current_st_name,
+    current_dist_name: props.current_dist_name,
+    mla_name: props.mla_name,
+    party: props.party,
+    ac_name: props.ac_name,
+    st_name: props.st_name,
+    dist_name: props.dist_name,
+    // Reconstruct location from stored lat/lng
+    location: [props.loc_lat, props.loc_lng],
+});

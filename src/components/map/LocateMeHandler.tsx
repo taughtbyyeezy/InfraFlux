@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { useMap } from '../ui/MapLibre';
 
 interface LocateMeHandlerProps {
     center: [number, number] | null;
@@ -11,59 +10,79 @@ interface LocateMeHandlerProps {
     focusTrigger?: number;
 }
 
+/**
+ * Calculates offset center for mobile view with bottom panel
+ * When panel takes bottom 50%, marker should be centered in top 50%
+ * To achieve this, we move the camera DOWN by ~25% of screen height
+ */
+const calculateOffsetCenter = (
+    map: maplibregl.Map,
+    latlng: [number, number]
+): [number, number] => {
+    const mapLibreLngLat: [number, number] = [latlng[1], latlng[0]]; // [lng, lat]
+    const projectedPoint = map.project(mapLibreLngLat);
+
+    const containerHeight = map.getContainer().offsetHeight;
+    // Panel is ~50% height, so offset by 25% to center marker in top half
+    const offsetPixels = containerHeight * 0.25;
+    
+    // Move camera DOWN (add to Y) so marker moves UP on screen into visible area
+    projectedPoint.y += offsetPixels;
+
+    const targetLngLat = map.unproject(projectedPoint);
+    return [targetLngLat.lng, targetLngLat.lat]; // Return as [lng, lat] for flyTo
+};
+
 export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({
     center,
     focusLocation,
     isMobile,
     isMenuOpen,
     locateTrigger = 0,
-    focusTrigger = 0
+    focusTrigger = 0,
 }) => {
-    const map = useMap();
-    const lastCenterRef = useRef<string>("");
+    const { map, isLoaded } = useMap();
+    const lastCenterRef = useRef<string>('');
     const lastLocateTriggerRef = useRef<number>(0);
     const lastFocusTriggerRef = useRef<number>(0);
 
-    const getOffsetCenter = (latlng: [number, number], targetZoom: number) => {
-        if (!map || !isMobile) return latlng;
-
-        // 1. Project the GPS point to absolute pixel coordinates at the target zoom level
-        const projectedPoint = map.project(latlng, targetZoom);
-
-        // 2. Adjust for the visual offset (move camera 25% + 15px "down" the screen to account for 50% + 30px panel)
-        const containerHeight = map.getSize().y;
-        const offsetPoint = L.point(projectedPoint.x, projectedPoint.y + (containerHeight * 0.25) + 15);
-
-        // 3. Unproject back to GPS coordinates
-        const targetLatLng = map.unproject(offsetPoint, targetZoom);
-        return [targetLatLng.lat, targetLatLng.lng] as [number, number];
-    };
-
     useEffect(() => {
-        if (!map) return;
+        if (!map || !isLoaded) return;
 
-        const currentZoom = map.getZoom();
-
-        // Handle Locate Me (Scenario 1 & 2)
+        // Handle Locate Me (GPS button)
         const locateTriggerChanged = locateTrigger !== lastLocateTriggerRef.current;
         lastLocateTriggerRef.current = locateTrigger;
 
-        if (center && (locateTriggerChanged || (lastCenterRef.current !== center.join(',')))) {
+        if (center && (locateTriggerChanged || lastCenterRef.current !== center.join(','))) {
             lastCenterRef.current = center.join(',');
             const targetZoom = 18;
-            const finalTarget = (isMobile && isMenuOpen) ? getOffsetCenter(center, targetZoom) : center;
-            map.setView(finalTarget, targetZoom, { animate: true, duration: 0.5 });
-            return; // Priority to GPS move
+            
+            // For GPS locate, use offset when menu is open on mobile
+            const finalCenter = (isMobile && isMenuOpen)
+                ? calculateOffsetCenter(map, center)
+                : [center[1], center[0]] as [number, number];
+
+            map.flyTo({
+                center: finalCenter,
+                zoom: targetZoom,
+                duration: 500,
+            });
+            return;
         }
 
-        // Handle Map Click Focus (Explicit trigger from UserMap)
+        // Handle Map Click / Marker Focus (when bottom panel is open)
         const focusTriggerChanged = focusTrigger !== lastFocusTriggerRef.current;
         lastFocusTriggerRef.current = focusTrigger;
 
         if (isMobile && focusTriggerChanged && focusLocation) {
-            const offsetTarget = getOffsetCenter(focusLocation, currentZoom);
-            map.setView(offsetTarget, currentZoom, { animate: true, duration: 0.5 });
+            const offsetCenter = calculateOffsetCenter(map, focusLocation);
+            map.flyTo({
+                center: offsetCenter,
+                zoom: map.getZoom(),
+                duration: 500,
+            });
         }
-    }, [center, focusLocation, map, isMobile, isMenuOpen, locateTrigger, focusTrigger]);
+    }, [center, focusLocation, map, isLoaded, isMobile, isMenuOpen, locateTrigger, focusTrigger]);
+
     return null;
 };
