@@ -10,6 +10,16 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { query } from './db.js';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
+
+// Rate Limiters
+const reportSubmissionLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute window
+    max: 5, // Limit each IP to 5 reports per minute
+    message: { error: "Too many reports submitted from this IP, please try again after a minute." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Validation Schemas
 const sanitizeHTML = (str: string): string => {
@@ -43,10 +53,12 @@ const ResolveVoteSchema = z.object({
 });
 
 // Admin Auth Middleware
-const adminAuth = (req: Request, res: Response, next: NextFunction) => {
-    const adminSecret = req.headers['x-admin-secret'];
-    if (process.env.ADMIN_SECRET && adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ error: 'Unauthorized: Invalid admin secret' });
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    const clientSecret = req.headers['x-admin-secret'];
+    const serverSecret = process.env.ADMIN_SECRET;
+    
+    if (!clientSecret || clientSecret !== serverSecret) {
+        return res.status(403).json({ error: "Unauthorized: Invalid admin secret" });
     }
     next();
 };
@@ -131,10 +143,12 @@ router.get('/lookup-mla', async (req: Request, res: Response) => {
     }
 });
 
-// GET /api/map-state?timestamp=XYZ
+// GET /api/map-state?timestamp=XYZ&minLng=A&minLat=B&maxLng=C&maxLat=D
 router.get('/map-state', async (req: Request, res: Response) => {
-    const { timestamp } = req.query;
+    const { timestamp, minLng, minLat, maxLng, maxLat } = req.query;
     const targetTime = timestamp ? new Date(timestamp as string) : new Date();
+
+    const hasBounds = minLng && minLat && maxLng && maxLat;
 
     try {
         const sql = `
@@ -164,6 +178,7 @@ router.get('/map-state', async (req: Request, res: Response) => {
         ac.dist_name as current_dist_name,
         COALESCE(json_agg(distinct m.image_url) FILTER (WHERE m.image_url IS NOT NULL), '[]') as images
       FROM issues i
+      ${hasBounds ? 'WHERE ST_Intersects(i.geom, ST_MakeEnvelope($2, $3, $4, $5, 4326))' : ''}
       JOIN LATERAL (
         SELECT * FROM issue_updates
         WHERE issue_id = i.id AND timestamp <= $1
@@ -173,10 +188,15 @@ router.get('/map-state', async (req: Request, res: Response) => {
       LEFT JOIN media m ON m.update_id = u.id
       LEFT JOIN mla_data ac ON ST_Contains(ac.geom, i.geom::geometry)
       GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note, i.reported_mla_name, i.reported_mla_party, i.reported_ac_name, i.reported_st_name, i.reported_dist_name, ac.id
-      ORDER BY i.created_at DESC;
+      ORDER BY i.created_at DESC
+      ${hasBounds ? '' : 'LIMIT 100'};
     `;
 
-        const result = await query(sql, [targetTime]);
+        const params = hasBounds 
+            ? [targetTime, minLng, minLat, maxLng, maxLat] 
+            : [targetTime];
+
+        const result = await query(sql, params);
 
         // Transform back to the frontend types (location: [lat, lng])
         const issues = result.rows.map((row: IssueRow) => ({
@@ -216,7 +236,7 @@ router.get('/map-state', async (req: Request, res: Response) => {
 
 
 // POST /api/report
-router.post('/report', async (req: Request, res: Response) => {
+router.post('/report', reportSubmissionLimiter, async (req: Request, res: Response) => {
     const validation = IssueReportSchema.safeParse(req.body);
     if (!validation.success) {
         return res.status(400).json({ error: 'Invalid report data', details: validation.error.format() });
@@ -376,7 +396,7 @@ router.post('/issue/:id/vote', async (req: Request, res: Response) => {
 });
 
 // POST /api/issue/:id/approve (Admin)
-router.post('/issue/:id/approve', adminAuth, async (req: Request, res: Response) => {
+router.post('/issue/:id/approve', requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         await query('UPDATE issues SET approved = TRUE WHERE id = $1', [id]);
@@ -388,7 +408,7 @@ router.post('/issue/:id/approve', adminAuth, async (req: Request, res: Response)
 });
 
 // POST /api/issue/:id/delist (Admin)
-router.post('/issue/:id/delist', adminAuth, async (req: Request, res: Response) => {
+router.post('/issue/:id/delist', requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         // Create a new issue_update with resolved status

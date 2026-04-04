@@ -137,12 +137,19 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [hasInitialCentered, setHasInitialCentered] = useState(false);
 
     // Fetch map data
-    const fetchMapState = async (time: Date) => {
-        setIsLoading(true);
+    const fetchMapState = async (time: Date, bounds?: { minLng: number; minLat: number; maxLng: number; maxLat: number }) => {
+        // Only show global loading overlay on initial mount (when issues are empty)
+        const isInitialLoad = issues.length === 0;
+        if (isInitialLoad) setIsLoading(true);
+
         const minDelay = new Promise(resolve => setTimeout(resolve, 1000));
         try {
             const fetchPromise = (async () => {
-                const response = await fetch(`${baseUrl}/api/map-state?timestamp=${time.toISOString()}`);
+                let url = `${baseUrl}/api/map-state?timestamp=${time.toISOString()}`;
+                if (bounds) {
+                    url += `&minLng=${bounds.minLng}&minLat=${bounds.minLat}&maxLng=${bounds.maxLng}&maxLat=${bounds.maxLat}`;
+                }
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
             })();
@@ -156,13 +163,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             addToast('Failed to fetch map data', 'error');
             await minDelay;
         } finally {
-            setIsLoading(false);
+            if (isInitialLoad) setIsLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchMapState(currentTime);
-    }, [currentTime]);
+    // Removed unconditional initial fetch - relying on map.onMoveEnd to trigger first load
 
     const getGeoErrorMessage = (error: GeolocationPositionError) => {
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -612,6 +617,17 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 essential: true
             });
         }
+
+        // Spatial Pagination: Fetch issues within the new viewport
+        if (map) {
+            const bounds = map.getBounds();
+            fetchMapState(currentTime, {
+                minLng: bounds.getWest(),
+                minLat: bounds.getSouth(),
+                maxLng: bounds.getEast(),
+                maxLat: bounds.getNorth()
+            });
+        }
     };
 
     return (
@@ -897,7 +913,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     borderRadius: '50%',
                                     border: '3px solid white',
                                     boxShadow: `0 0 0 4px ${getMarkerColor(reportForm.type).glow}, 0 0 20px ${getMarkerColor(reportForm.type).glowStrong}`,
-                                    animation: 'pulse 2s infinite',
                                     cursor: 'grab',
                                 }} />
                             </MarkerContent>
