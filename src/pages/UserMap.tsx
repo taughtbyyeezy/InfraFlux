@@ -167,7 +167,10 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         }
     };
 
-    // Removed unconditional initial fetch - relying on map.onMoveEnd to trigger first load
+    // Re-added initial fetch to resolve loading deadlock
+    useEffect(() => {
+        fetchMapState(currentTime);
+    }, [currentTime]);
 
     const getGeoErrorMessage = (error: GeolocationPositionError) => {
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
