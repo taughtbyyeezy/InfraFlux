@@ -6,6 +6,7 @@ import React, {
     useState,
     forwardRef,
     useImperativeHandle,
+    useMemo,
 } from 'react';
 import { createPortal } from 'react-dom';
 import maplibregl from 'maplibre-gl';
@@ -46,12 +47,19 @@ interface MapProps {
     minZoom?: number;
     maxZoom?: number;
     scrollZoom?: boolean;
+    dragRotate?: boolean;
+    touchZoomRotate?: boolean;
+    touchPitch?: boolean;
+    maxPitch?: number;
     style?: React.CSSProperties;
     theme?: 'light' | 'dark';
     projection?: maplibregl.ProjectionSpecification;
     viewport?: Partial<MapViewport>;
     onViewportChange?: (viewport: MapViewport) => void;
+    onMoveEnd?: (viewport: MapViewport) => void;
     onMapClick?: (e: maplibregl.MapMouseEvent) => void;
+    isPanelOpen?: boolean;
+    suppressPaddingEffect?: boolean;
     loading?: boolean;
 }
 
@@ -71,7 +79,7 @@ const DARK_TILES = [
     'https://d.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png',
 ];
 
-export const Map = forwardRef<MapRef, MapProps>(
+const MapBase = forwardRef<MapRef, MapProps>(
     (
         {
             children,
@@ -84,8 +92,15 @@ export const Map = forwardRef<MapRef, MapProps>(
             style,
             theme = 'light',
             projection,
+            dragRotate,
+            touchZoomRotate,
+            touchPitch,
+            maxPitch,
             onViewportChange,
+            onMoveEnd,
             onMapClick,
+            isPanelOpen = false,
+            suppressPaddingEffect = false,
         },
         ref,
     ) => {
@@ -93,11 +108,23 @@ export const Map = forwardRef<MapRef, MapProps>(
         const mapRef = useRef<maplibregl.Map | null>(null);
         const [isLoaded, setIsLoaded] = useState(false);
         const onViewportChangeRef = useRef(onViewportChange);
+        const onMoveEndRef = useRef(onMoveEnd);
         const onMapClickRef = useRef(onMapClick);
+        const isInitialMount = useRef(true);
+
+        // Stabilize context value to prevent unnecessary re-renders of all map children
+        const contextValue = useMemo(() => ({
+            map: mapRef.current,
+            isLoaded
+        }), [isLoaded]);
 
         useEffect(() => {
             onViewportChangeRef.current = onViewportChange;
         }, [onViewportChange]);
+
+        useEffect(() => {
+            onMoveEndRef.current = onMoveEnd;
+        }, [onMoveEnd]);
 
         useEffect(() => {
             onMapClickRef.current = onMapClick;
@@ -141,6 +168,10 @@ export const Map = forwardRef<MapRef, MapProps>(
                 minZoom,
                 maxZoom,
                 scrollZoom,
+                dragRotate: dragRotate ?? true,
+                touchZoomRotate: touchZoomRotate ?? true,
+                touchPitch: touchPitch ?? true,
+                maxPitch: maxPitch ?? 85,
                 attributionControl: false,
             });
 
@@ -169,6 +200,19 @@ export const Map = forwardRef<MapRef, MapProps>(
                 }
             });
 
+            map.on('moveend', () => {
+                if (onMoveEndRef.current) {
+                    const c = map.getCenter();
+                    onMoveEndRef.current({
+                        longitude: c.lng,
+                        latitude: c.lat,
+                        zoom: map.getZoom(),
+                        bearing: map.getBearing(),
+                        pitch: map.getPitch(),
+                    });
+                }
+            });
+
             map.on('click', (e) => {
                 onMapClickRef.current?.(e);
             });
@@ -179,6 +223,81 @@ export const Map = forwardRef<MapRef, MapProps>(
                 setIsLoaded(false);
             };
         }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+        // Update Projection
+        useEffect(() => {
+            const map = mapRef.current;
+            if (!map || !projection) return;
+
+            if (map.isStyleLoaded()) {
+                (map as any).setProjection(projection);
+            } else {
+                map.once('style.load', () => {
+                    (map as any).setProjection(projection);
+                });
+            }
+        }, [projection]);
+
+        // Update Interaction Handlers
+        useEffect(() => {
+            const map = mapRef.current;
+            if (!map) return;
+
+            if (dragRotate !== undefined) {
+                if (dragRotate) map.dragRotate.enable();
+                else map.dragRotate.disable();
+            }
+
+            if (touchZoomRotate !== undefined) {
+                if (touchZoomRotate) map.touchZoomRotate.enableRotation();
+                else map.touchZoomRotate.disableRotation();
+            }
+
+            if (touchPitch !== undefined) {
+                if (touchPitch) map.touchPitch.enable();
+                else map.touchPitch.disable();
+            }
+
+            if (maxPitch !== undefined) {
+                map.setMaxPitch(maxPitch);
+            }
+        }, [dragRotate, touchZoomRotate, touchPitch, maxPitch]);
+
+        // Update Padding for Optical Centering (Animated)
+        useEffect(() => {
+            const map = mapRef.current;
+            if (!map || suppressPaddingEffect) return;
+
+            // Preserve initial fly-in animation on first load
+            if (isInitialMount.current) {
+                isInitialMount.current = false;
+                return;
+            }
+
+            // STAGGER: Add a small delay to let the UI (Vaul) start its transition 
+            // before slamming the main thread with an easeTo camera calculation
+            const timeout = setTimeout(() => {
+                const map = mapRef.current;
+                if (!map) return;
+                
+                if (isPanelOpen) {
+                    const height = map.getContainer().offsetHeight;
+                    map.easeTo({
+                        padding: { top: 0, bottom: height * 0.5, left: 0, right: 0 },
+                        duration: 300,
+                        essential: true
+                    });
+                } else {
+                    map.easeTo({
+                        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+                        duration: 300,
+                        essential: true
+                    });
+                }
+            }, 50);
+
+            return () => clearTimeout(timeout);
+        }, [isPanelOpen, suppressPaddingEffect]);
 
         // Update theme — swap tile source only, preserve all custom layers
         useEffect(() => {
@@ -214,7 +333,7 @@ export const Map = forwardRef<MapRef, MapProps>(
         }, [theme]);
 
         return (
-            <MapContext.Provider value={{ map: mapRef.current, isLoaded }}>
+            <MapContext.Provider value={contextValue}>
                 <div ref={containerRef} className={className} style={style}>
                     {isLoaded && children}
                 </div>
@@ -222,6 +341,24 @@ export const Map = forwardRef<MapRef, MapProps>(
         );
     },
 );
+
+export const Map = React.memo(MapBase, (prev, next) => {
+    // Custom comparison to prevent re-renders on high-frequency map movement
+    // The Map component only needs a full re-render if its container geometry 
+    // or architectural props (theme, projection, interaction toggles) change.
+    return (
+        prev.theme === next.theme &&
+        prev.projection === next.projection &&
+        prev.isPanelOpen === next.isPanelOpen &&
+        prev.suppressPaddingEffect === next.suppressPaddingEffect &&
+        prev.dragRotate === next.dragRotate &&
+        prev.touchZoomRotate === next.touchZoomRotate &&
+        prev.touchPitch === next.touchPitch &&
+        prev.maxPitch === next.maxPitch &&
+        prev.className === next.className &&
+        prev.style === next.style
+    );
+});
 
 Map.displayName = 'Map';
 

@@ -921,6 +921,75 @@ body {
   100% { background-position: -200% 0; }
 }
 
+.shimmer-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.08) 25%,
+    rgba(0, 0, 0, 0.25) 50%,
+    rgba(0, 0, 0, 0.08) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite !important;
+  color: transparent !important;
+}
+
+.dark-theme .shimmer-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+
+.location-skeleton {
+  flex: 1;
+  height: 44px;
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+}
+
+.skeleton-text-line {
+  height: 0.85rem;
+  width: 140px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.15) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+.dark-theme .skeleton-text-line {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.06) 75%
+  );
+}
+
+.location-skeleton-mobile {
+  flex: 1;
+  height: 44px;
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+}
+
 .badge-party-label {
   font-size: 0.7rem;
   font-weight: 600;
@@ -2436,9 +2505,11 @@ body {
 
 @media (max-width: 767px) {
   .btn-locate-square {
-    flex: 0 0 44px;
-    width: 44px !important;
+    flex: 0 0 50px;
+    width: 50px !important;
     height: 44px !important;
+    aspect-ratio: unset !important;
+    border-radius: 13px !important;
   }
 }
 
@@ -3509,7 +3580,8 @@ body {
 
 .reward-id-box {
   background: rgba(0, 0, 0, 0.03);
-  padding: 0.5rem 0.75rem;
+  padding: 0 0.75rem;
+  height: 44px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -3563,4 +3635,31 @@ body {
   font-size: 0.75rem;
   color: var(--text-dim);
   line-height: 1.4;
+}
+
+/* Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

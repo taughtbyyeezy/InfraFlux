@@ -3,6 +3,7 @@ import { Navigation, PlusCircle, ChevronRight } from 'lucide-react';
 import { IssueType } from '../../types';
 import { hapticButton } from '../../utils/haptic';
 import ImageUpload from './ImageUpload';
+import { Spinner } from '../Skeleton';
 
 interface ReportFormData {
     type: IssueType;
@@ -29,6 +30,8 @@ interface ReportFormProps {
     isMobile?: boolean;
     uploadProgress?: number;
     isSubmitting?: boolean;
+    gpsCalibrating?: boolean;
+    isLocating?: boolean;
 }
 
 const issueTypes = [
@@ -52,7 +55,9 @@ const DesktopReportForm: React.FC<ReportFormProps & { isUploading: boolean; setI
     isUploading,
     setIsUploading,
     uploadProgress = 0,
-    isSubmitting = false
+    isSubmitting = false,
+    gpsCalibrating = false,
+    isLocating = false
 }) => {
     const noteRef = useRef<HTMLTextAreaElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
@@ -137,8 +142,13 @@ const DesktopReportForm: React.FC<ReportFormProps & { isUploading: boolean; setI
                                 hapticButton();
                                 onGetLocation();
                             }}
+                            disabled={isLocating}
                         >
-                            {formData.location ? (
+                            {gpsCalibrating ? (
+                                <span className="location-skeleton">
+                                    <span className="skeleton-text-line" />
+                                </span>
+                            ) : formData.location ? (
                                 <span className="location-coordinates">
                                     {formData.location[0].toFixed(4)}, {formData.location[1].toFixed(4)}
                                 </span>
@@ -152,10 +162,15 @@ const DesktopReportForm: React.FC<ReportFormProps & { isUploading: boolean; setI
                                 hapticButton();
                                 onGetLocation();
                             }}
-                            className="btn-locate-square"
+                            className={`btn-locate-square ${isLocating ? 'locating' : ''}`}
+                            disabled={isLocating}
                             aria-label="Use my current location"
                         >
-                            <Navigation size={18} color="white" />
+                            {isLocating ? (
+                                <Spinner style={{ fontSize: '1.2rem', width: '18px', height: '18px', color: 'white' }} />
+                            ) : (
+                                <Navigation size={18} color="white" />
+                            )}
                         </button>
                     </div>
                 </div>
@@ -268,7 +283,9 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
     isUploading,
     setIsUploading,
     uploadProgress = 0,
-    isSubmitting = false
+    isSubmitting = false,
+    gpsCalibrating = false,
+    isLocating = false
 }) => {
     const noteRef = useRef<HTMLTextAreaElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
@@ -326,6 +343,7 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
                                 style={{ '--severity-color': level.color } as React.CSSProperties}
                             >
                                 <span className="severity-label">{level.label}</span>
+                                <span className="skeleton-text-line" style={{ display: 'none' }} />
                                 <span className="severity-desc">{level.description}</span>
                             </button>
                         ))}
@@ -335,7 +353,11 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
                 <div className="form-group">
                     <label>LOCATION</label>
                     <div className="location-row">
-                        {formData.location ? (
+                        {gpsCalibrating ? (
+                            <span className="location-skeleton-mobile">
+                                <span className="skeleton-text-line" />
+                            </span>
+                        ) : formData.location ? (
                             <span className="location-coordinates">
                                 {formData.location[0].toFixed(4)}, {formData.location[1].toFixed(4)}
                             </span>
@@ -348,10 +370,15 @@ const MobileReportForm: React.FC<ReportFormProps & { isUploading: boolean; setIs
                                 hapticButton();
                                 onGetLocation();
                             }}
-                            className="btn-locate-square"
+                            className={`btn-locate-square ${isLocating ? 'locating' : ''}`}
+                            disabled={isLocating}
                             aria-label="Use my current location"
                         >
-                            <Navigation size={18} color="white" />
+                            {isLocating ? (
+                                <Spinner style={{ fontSize: '1.2rem', width: '18px', height: '18px', color: 'white' }} />
+                            ) : (
+                                <Navigation size={18} color="white" />
+                            )}
                         </button>
                     </div>
                 </div>

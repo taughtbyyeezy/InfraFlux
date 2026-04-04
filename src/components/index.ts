@@ -5,6 +5,7 @@ export { MapRegister } from './map/MapRegister';
 export { MapClickHandler } from './map/MapClickHandler';
 export { LocateMeHandler } from './map/LocateMeHandler';
 export { IssuesLayer } from './map/IssuesLayer';
+export { GpsBoundary } from './map/GpsBoundary';
 
 // Panel Components
 export { MobileBottomPanel } from './panels/MobileBottomPanel';

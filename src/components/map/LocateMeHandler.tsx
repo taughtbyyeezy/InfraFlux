@@ -10,29 +10,6 @@ interface LocateMeHandlerProps {
     focusTrigger?: number;
 }
 
-/**
- * Calculates offset center for mobile view with bottom panel
- * When panel takes bottom 50%, marker should be centered in top 50%
- * To achieve this, we move the camera DOWN by ~25% of screen height
- */
-const calculateOffsetCenter = (
-    map: maplibregl.Map,
-    latlng: [number, number]
-): [number, number] => {
-    const mapLibreLngLat: [number, number] = [latlng[1], latlng[0]]; // [lng, lat]
-    const projectedPoint = map.project(mapLibreLngLat);
-
-    const containerHeight = map.getContainer().offsetHeight;
-    // Panel is ~50% height, so offset by 25% to center marker in top half
-    const offsetPixels = containerHeight * 0.25;
-    
-    // Move camera DOWN (add to Y) so marker moves UP on screen into visible area
-    projectedPoint.y += offsetPixels;
-
-    const targetLngLat = map.unproject(projectedPoint);
-    return [targetLngLat.lng, targetLngLat.lat]; // Return as [lng, lat] for flyTo
-};
-
 export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({
     center,
     focusLocation,
@@ -53,33 +30,46 @@ export const LocateMeHandler: React.FC<LocateMeHandlerProps> = ({
         const locateTriggerChanged = locateTrigger !== lastLocateTriggerRef.current;
         lastLocateTriggerRef.current = locateTrigger;
 
-        if (center && (locateTriggerChanged || lastCenterRef.current !== center.join(','))) {
+        if (center && locateTriggerChanged) {
             lastCenterRef.current = center.join(',');
-            const targetZoom = 18;
+            const targetZoom = 19;
             
-            // For GPS locate, use offset when menu is open on mobile
-            const finalCenter = (isMobile && isMenuOpen)
-                ? calculateOffsetCenter(map, center)
-                : [center[1], center[0]] as [number, number];
+            // MapLibre expects [lng, lat]
+            const lngLat: [number, number] = [center[1], center[0]];
+            
+            // To center marker in the TOP half, we tell MapLibre that the BOTTOM half is "padded" 
+            // (i.e. occupied by something else). This pushes the center point up.
+            const bottomPadding = (isMobile && isMenuOpen)
+                ? map.getContainer().offsetHeight / 2
+                : 0;
 
+            // Smooth flyTo for all scenarios
             map.flyTo({
-                center: finalCenter,
+                center: lngLat,
                 zoom: targetZoom,
-                duration: 500,
+                padding: { left: 0, right: 0, top: 0, bottom: bottomPadding },
+                duration: 1200,
+                essential: true,
             });
             return;
         }
 
-        // Handle Map Click / Marker Focus (when bottom panel is open)
+        // Handle Map Click / Marker Focus (manual taps)
         const focusTriggerChanged = focusTrigger !== lastFocusTriggerRef.current;
         lastFocusTriggerRef.current = focusTrigger;
 
         if (isMobile && focusTriggerChanged && focusLocation) {
-            const offsetCenter = calculateOffsetCenter(map, focusLocation);
-            map.flyTo({
-                center: offsetCenter,
-                zoom: map.getZoom(),
-                duration: 500,
+            // MapLibre expects [lng, lat]
+            const lngLat: [number, number] = [focusLocation[1], focusLocation[0]];
+            
+            // Push marker into top half of screen
+            const bottomPadding = map.getContainer().offsetHeight / 2;
+
+            map.easeTo({
+                center: lngLat,
+                zoom: map.getZoom(), // Maintain current zoom
+                padding: { left: 0, right: 0, top: 0, bottom: bottomPadding },
+                duration: 0,
             });
         }
     }, [center, focusLocation, map, isLoaded, isMobile, isMenuOpen, locateTrigger, focusTrigger]);

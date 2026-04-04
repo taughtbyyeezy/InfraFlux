@@ -14,7 +14,7 @@ export const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({
     onClose,
     height = 0.5,
     showDragHandle = true,
-    modal = true
+    modal = false
 }) => {
     return (
         <Drawer.Root
@@ -26,14 +26,14 @@ export const MobileBottomPanel: React.FC<MobileBottomPanelProps> = ({
             <Drawer.Portal>
                 <Drawer.Overlay className="drawer-overlay" />
                 <Drawer.Content className="drawer-content"
-                    style={{ height: `calc(${height * 100}% + 30px)` }}
+                    style={{ height: `calc(${height * 100}% + 30px)`, willChange: 'transform' }}
                 >
                     {showDragHandle && (
                         <div className="drawer-handle-container">
                             <div className="drawer-handle" />
                         </div>
                     )}
-                    <div className="drawer-inner">
+                    <div className="drawer-inner" data-vaul-scrollable>
                         {children}
                     </div>
                 </Drawer.Content>

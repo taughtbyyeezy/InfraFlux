@@ -6,7 +6,7 @@ import { Navigation, PlusCircle, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getVoterId } from '../utils/voterId';
 import { useToast } from '../contexts/ToastContext';
-import { MapLoadingOverlay } from '../components/Skeleton';
+import { MapLoadingOverlay, Spinner } from '../components/Skeleton';
 import { hapticButton, hapticSuccess } from '../utils/haptic';
 import { Map, MapMarker, MarkerContent, useMap } from '../components/ui/MapLibre';
 import {
@@ -93,9 +93,18 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
+    const [isMarkerVisible, setIsMarkerVisible] = useState(true);
+    const [isLocating, setIsLocating] = useState(false);
+    const suppressPaddingEffect = useRef(false);
+    const lastViewportUpdate = useRef(0);
 
 
     const baseUrl = import.meta.env.VITE_API_URL || '';
+
+    const ZOOM_THRESHOLD = 5.0;
+    const isStreetLevel = zoom > ZOOM_THRESHOLD;
+    const isRotationLocked = isStreetLevel || !!selectedIssue || reportStep === 'form' || isMobileReportOpen;
+    const isPanelOpen = isMobile && (!!selectedIssue || isMobileReportOpen);
 
     // Initialize menu open on desktop
     useEffect(() => {
@@ -503,9 +512,13 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const performGeolocation = (updateReport: boolean = false) => {
         if (!navigator.geolocation) {
-            addToast('Geolocation is not supported by your browser.', 'warning');
+            addToast('Geolocation is not supported by your browser', 'error');
             return;
         }
+
+        // 1. Safety Check: Prevent overlapping GPS requests and camera flights
+        if (isLocating) return;
+        setIsLocating(true);
 
         if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
             addToast('Note: Safari requires HTTPS for Geolocation. Testing on a local IP might fail.', 'warning');
@@ -529,8 +542,12 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
                 if (updateReport) {
                     // Scenario 3: Also update report marker and trigger focus
+                    setIsMarkerVisible(false);
                     setReportForm(prev => ({ ...prev, location: newLoc }));
                     setFocusTrigger(prev => prev + 1);
+                    
+                    // Re-reveal marker after flyin (completes at last moment ~950ms)
+                    setTimeout(() => setIsMarkerVisible(true), 950);
                 }
             } else if (updateReport) {
                 // Desktop path
@@ -538,7 +555,9 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             }
 
             hapticSuccess();
-            addToast('Location found successfully', 'success');
+            
+            // Allow cooldown once high-precision flyin completes
+            setTimeout(() => setIsLocating(false), 2000);
         };
 
         const error = (err: GeolocationPositionError) => {
@@ -550,6 +569,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 return;
             }
             addToast(`Unable to get location: ${getGeoErrorMessage(err)}`, 'error');
+            setIsLocating(false);
         };
 
         navigator.geolocation.getCurrentPosition(success, error, options);
@@ -581,6 +601,17 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
         if (mag <= 3) return 'Low';
         if (mag <= 7) return 'Moderate';
         return 'High';
+    };
+
+    const handleMoveEnd = (vp: any) => {
+        if (isRotationLocked && (vp.bearing !== 0 || vp.pitch !== 0)) {
+            map?.easeTo({
+                bearing: 0,
+                pitch: 0,
+                duration: 200,
+                essential: true
+            });
+        }
     };
 
     return (
@@ -719,8 +750,24 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     maxZoom={20}
                     style={{ height: '100%', width: '100%' }}
                     theme={theme}
-                    projection={{ type: 'globe' }}
-                    onViewportChange={(vp) => setZoom(vp.zoom)}
+                    projection={isStreetLevel ? { type: 'mercator' } : { type: 'globe' }}
+                    dragRotate={!isRotationLocked}
+                    touchZoomRotate={!isRotationLocked}
+                    touchPitch={!isRotationLocked}
+                    maxPitch={isRotationLocked ? 0 : 85}
+                    onViewportChange={(vp) => {
+                        const now = Date.now();
+                        if (now - lastViewportUpdate.current > 100) {
+                            setZoom(vp.zoom);
+                            lastViewportUpdate.current = now;
+                        }
+                    }}
+                    onMoveEnd={(vp) => {
+                        setZoom(vp.zoom);
+                        handleMoveEnd(vp);
+                    }}
+                    isPanelOpen={isPanelOpen}
+                    suppressPaddingEffect={suppressPaddingEffect.current}
                 >
                     <MapFlyIn isLoading={isLoading} targetCenter={[20.5937, 78.9629]} targetZoom={4} />
                     <ZoomHandler onZoomChange={setZoom} />
@@ -736,11 +783,51 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                             });
                             if (renderedFeatures.length > 0) return;
 
+                            // Suppress automated padding effect during manual camera movement
+                            suppressPaddingEffect.current = true;
+
+                            const targetPaddingBottom = map.getContainer().offsetHeight * 0.5;
+                            const currentZoom = map.getZoom();
+
+                            if (currentZoom < 18) {
+                                // Cinematic fly-in from high altitude
+                                map.flyTo({
+                                    center: [loc[1], loc[0]], // [lng, lat]
+                                    zoom: 18,
+                                    duration: 1500,
+                                    padding: { 
+                                        bottom: targetPaddingBottom,
+                                        top: 0, left: 0, right: 0 
+                                    },
+                                    essential: true
+                                });
+                                // Reset suppression after the longer fly-in
+                                setTimeout(() => {
+                                    suppressPaddingEffect.current = false;
+                                }, 1550);
+                            } else {
+                                // Smooth slide for local, street-level adjustments
+                                map.easeTo({
+                                    center: [loc[1], loc[0]], // [lng, lat]
+                                    duration: 600,
+                                    padding: { 
+                                        bottom: targetPaddingBottom,
+                                        top: 0, left: 0, right: 0 
+                                    },
+                                    essential: true
+                                });
+                                // Reset suppression after the shorter pan
+                                setTimeout(() => {
+                                    suppressPaddingEffect.current = false;
+                                }, 650);
+                            }
+
                             if (isMobile) {
                                 hapticButton();
                                 setSelectedIssue(null);
                                 setReportStep(null);
                                 setIsMobileReportOpen(true);
+                                setIsMarkerVisible(true);
                                 setReportForm({
                                     type: 'pothole',
                                     note: '',
@@ -755,13 +842,13 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                     ac_name: undefined,
                                     st_name: undefined
                                 });
-                                // Trigger focus handler for offset centering
-                                setFocusTrigger(prev => prev + 1);
                             } else if (reportStep === 'form' || isMobileReportOpen) {
                                 setReportForm(prev => ({ ...prev, location: loc }));
-                                // Trigger focus handler for offset centering on mobile
-                                if (isMobile) {
-                                    setFocusTrigger(prev => prev + 1);
+                                // Ensure suppression resets for desktop as well if it's already open
+                                if (!isMobile) {
+                                    setTimeout(() => {
+                                        suppressPaddingEffect.current = false;
+                                    }, 650);
                                 }
                             }
                         }}
@@ -788,7 +875,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                         onZoomChange={setZoom}
                     />
 
-                    {reportForm.location && (reportStep === 'form' || isMobileReportOpen) && (
+                    {reportForm.location && (reportStep === 'form' || isMobileReportOpen) && isMarkerVisible && (
                         <MapMarker
                             key="report-marker"
                             longitude={reportForm.location[1]}
@@ -850,14 +937,19 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                             </button>
                             <button
                                 type="button"
-                                className="mobile-locate-btn"
+                                className={`mobile-locate-btn ${isLocating ? 'locating' : ''}`}
                                 onClick={() => {
                                     hapticButton();
                                     handleLocateMe();
                                 }}
+                                disabled={isLocating}
                                 aria-label="Locate me"
                             >
-                                <Navigation size={18} />
+                                {isLocating ? (
+                                    <Spinner style={{ fontSize: '1.2rem', width: '18px', height: '18px' }} />
+                                ) : (
+                                    <Navigation size={18} />
+                                )}
                             </button>
                         </div>
                     </motion.div>
@@ -870,7 +962,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     <MobileBottomPanel
                         onClose={() => setSelectedIssue(null)}
                         height={0.5}
-                        modal={true}
+                        modal={false}
                     >
                         <div className="mobile-issue-details">
                             <div className="mobile-detail-header">
@@ -932,6 +1024,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                 isMobile={isMobile}
                                 uploadProgress={uploadProgress}
                                 isSubmitting={isSubmitting}
+                                isLocating={isLocating}
                             />
                         )}
                     </MobileBottomPanel>
@@ -1000,6 +1093,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                 isMobile={isMobile}
                                 uploadProgress={uploadProgress}
                                 isSubmitting={isSubmitting}
+                                isLocating={isLocating}
                             />
                         )}
                     </div>

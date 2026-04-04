@@ -34,7 +34,7 @@ export const Spinner: React.FC<SpinnerProps> = ({ className, style }) => {
       width: '1.5em',
       height: '1.5em',
       fontFamily: '"Courier New", Courier, monospace',
-      fontWeight: 'bold',
+      fontWeight: 900,
       fontSize: '1.2em',
       overflow: 'hidden',
       position: 'relative',
