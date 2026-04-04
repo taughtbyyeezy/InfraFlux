@@ -97,6 +97,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
     const [isLocating, setIsLocating] = useState(false);
     const suppressPaddingEffect = useRef(false);
     const lastViewportUpdate = useRef(0);
+    const scrollDelayRef = useRef<NodeJS.Timeout | null>(null);
 
 
     const baseUrl = import.meta.env.VITE_API_URL || '';
@@ -160,7 +161,11 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             // IP-based centering removed to prioritize Rewari default
         } catch (error) {
             console.error('Failed to fetch map state:', error);
-            addToast('Failed to fetch map data', 'error');
+            // Only show toasts for initial load or explicitly triggered loads.
+            // Silence background spatial pagination errors to prevent UI spam.
+            if (isInitialLoad) {
+                addToast('Failed to fetch map data', 'error');
+            }
             await minDelay;
         } finally {
             if (isInitialLoad) setIsLoading(false);
@@ -621,15 +626,33 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             });
         }
 
-        // Spatial Pagination: Fetch issues within the new viewport
+        // Spatial Pagination: Debounced fetch for issues within the new viewport
         if (map) {
-            const bounds = map.getBounds();
-            fetchMapState(currentTime, {
-                minLng: bounds.getWest(),
-                minLat: bounds.getSouth(),
-                maxLng: bounds.getEast(),
-                maxLat: bounds.getNorth()
-            });
+            if (scrollDelayRef.current) clearTimeout(scrollDelayRef.current);
+            
+            scrollDelayRef.current = setTimeout(() => {
+                const bounds = map.getBounds();
+                
+                // Extract and sanitize coordinates
+                const minLng = bounds.getWest();
+                const minLat = bounds.getSouth();
+                const maxLng = bounds.getEast();
+                const maxLat = bounds.getNorth();
+
+                // Validation & Clamping
+                const isInvalid = isNaN(minLng) || isNaN(minLat) || isNaN(maxLng) || isNaN(maxLat);
+                if (isInvalid) return;
+
+                // Clamp to Earth constraints to avoid PostGIS wrap-around crashes
+                const safeBounds = {
+                    minLng: Math.max(-180, Math.min(180, minLng)),
+                    minLat: Math.max(-90, Math.min(90, minLat)),
+                    maxLng: Math.max(-180, Math.min(180, maxLng)),
+                    maxLat: Math.max(-90, Math.min(90, maxLat))
+                };
+
+                fetchMapState(currentTime, safeBounds);
+            }, 350); // 350ms debounce
         }
     };
 

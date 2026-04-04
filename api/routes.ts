@@ -145,10 +145,20 @@ router.get('/lookup-mla', async (req: Request, res: Response) => {
 
 // GET /api/map-state?timestamp=XYZ&minLng=A&minLat=B&maxLng=C&maxLat=D
 router.get('/map-state', async (req: Request, res: Response) => {
-    const { timestamp, minLng, minLat, maxLng, maxLat } = req.query;
+    const { timestamp, minLng: qMinLng, minLat: qMinLat, maxLng: qMaxLng, maxLat: qMaxLat } = req.query;
     const targetTime = timestamp ? new Date(timestamp as string) : new Date();
 
-    const hasBounds = minLng && minLat && maxLng && maxLat;
+    // Parse and validate coordinates for spatial stability
+    const minLng = parseFloat(qMinLng as string);
+    const minLat = parseFloat(qMinLat as string);
+    const maxLng = parseFloat(qMaxLng as string);
+    const maxLat = parseFloat(qMaxLat as string);
+
+    const hasValidBounds = !isNaN(minLng) && !isNaN(minLat) && !isNaN(maxLng) && !isNaN(maxLat) &&
+        minLng >= -180 && minLng <= 180 &&
+        maxLng >= -180 && maxLng <= 180 &&
+        minLat >= -90 && minLat <= 90 &&
+        maxLat >= -90 && maxLat <= 90;
 
     try {
         const sql = `
@@ -178,7 +188,7 @@ router.get('/map-state', async (req: Request, res: Response) => {
         ac.dist_name as current_dist_name,
         COALESCE(json_agg(distinct m.image_url) FILTER (WHERE m.image_url IS NOT NULL), '[]') as images
       FROM issues i
-      ${hasBounds ? 'WHERE ST_Intersects(i.geom, ST_MakeEnvelope($2, $3, $4, $5, 4326))' : ''}
+      ${hasValidBounds ? 'WHERE ST_Intersects(i.geom, ST_MakeEnvelope($2, $3, $4, $5, 4326))' : ''}
       JOIN LATERAL (
         SELECT * FROM issue_updates
         WHERE issue_id = i.id AND timestamp <= $1
@@ -189,10 +199,10 @@ router.get('/map-state', async (req: Request, res: Response) => {
       LEFT JOIN mla_data ac ON ST_Contains(ac.geom, i.geom::geometry)
       GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note, i.reported_mla_name, i.reported_mla_party, i.reported_ac_name, i.reported_st_name, i.reported_dist_name, ac.id
       ORDER BY i.created_at DESC
-      ${hasBounds ? '' : 'LIMIT 100'};
+      ${hasValidBounds ? '' : 'LIMIT 100'};
     `;
 
-        const params = hasBounds 
+        const params = hasValidBounds 
             ? [targetTime, minLng, minLat, maxLng, maxLat] 
             : [targetTime];
 
