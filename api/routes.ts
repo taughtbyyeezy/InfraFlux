@@ -213,7 +213,10 @@ router.get('/map-state', async (req: Request, res: Response) => {
       ) u ON true
       LEFT JOIN media m ON m.update_id = u.id
       LEFT JOIN mla_data ac ON ST_Contains(ac.geom, i.geom::geometry)
-      ${hasValidBounds ? 'WHERE ST_Intersects(i.geom, ST_MakeEnvelope($2, $3, $4, $5, 4326))' : ''}
+      ${hasValidBounds 
+        ? "WHERE i.status != 'resolved' AND ST_Intersects(i.geom, ST_MakeEnvelope($2, $3, $4, $5, 4326))"
+        : "WHERE i.status != 'resolved'"
+      }
       GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, i.status, i.resolution_image_url, i.resolution_upvotes, i.resolution_downvotes, u.id, u.status, u.timestamp, u.note, i.reported_mla_name, i.reported_mla_party, i.reported_ac_name, i.reported_st_name, i.reported_dist_name, ac.id
       ORDER BY i.created_at DESC
       ${hasValidBounds ? '' : 'LIMIT 5000'};
@@ -437,16 +440,27 @@ router.post('/issue/:id/approve', requireAdmin, async (req: Request, res: Respon
 // POST /api/issue/:id/delist (Admin)
 router.post('/issue/:id/delist', requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
+    const client = await pool.connect();
     try {
-        // Create a new issue_update with resolved status
-        await query(
+        await client.query('BEGIN');
+        // 1. Update the denormalized status column on the issues table
+        await client.query(
+            'UPDATE issues SET status = $1 WHERE id = $2',
+            ['resolved', id]
+        );
+        // 2. Insert history record
+        await client.query(
             'INSERT INTO issue_updates (issue_id, status, note) VALUES ($1, $2, $3)',
             [id, 'resolved', 'Marked as resolved (delisted) by admin']
         );
-        res.json({ message: 'Issue delisted' });
+        await client.query('COMMIT');
+        return res.json({ message: 'Issue delisted' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to delist issue' });
+        await client.query('ROLLBACK');
+        console.error('🔥 FATAL DB ERROR IN DELIST ROUTE:', err);
+        return res.status(500).json({ error: 'Failed to delist issue' });
+    } finally {
+        client.release();
     }
 });
 
