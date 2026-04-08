@@ -1,5 +1,5 @@
 export type IssueType = 'pothole' | 'streetlight' | 'water_logging' | 'garbage_dump';
-export type IssueStatus = 'active' | 'resolved' | 'in_progress';
+export type IssueStatus = 'active' | 'resolved' | 'in_progress' | 'pending';
 export type PotholeSize = 'small' | 'medium' | 'large';
 export type Severity = 'low' | 'medium' | 'high';
 
@@ -22,6 +22,11 @@ export interface InfrastructureIssue {
     magnitude?: number;
     note?: string;
     originalId?: string;
+    // Civic Time Machine resolution data
+    resolution_image_url?: string;
+    resolution_upvotes?: number;
+    resolution_downvotes?: number;
+    op_token?: string;
     // MLA at time of report (stored when issue was created)
     reported_mla_name?: string;
     reported_mla_party?: string;

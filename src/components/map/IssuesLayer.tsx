@@ -37,10 +37,11 @@ export const IssuesLayer: React.FC<IssuesLayerProps> = ({
     useEffect(() => {
         if (!map || !isLoaded) return;
 
-        // ─── Add source (no clustering) ────────────────────────────────────────
+        // ─── Add source (No clustering - Fetch All Architecture) ─────────────────
         map.addSource(SOURCE_ID, {
             type: 'geojson',
             data: issuesToGeoJSON(issues),
+            cluster: false,
         });
 
         // ─── Heatmap layer (zoom 0–12) ─────────────────────────────────────────
@@ -81,14 +82,11 @@ export const IssuesLayer: React.FC<IssuesLayerProps> = ({
             minzoom: 12,
             paint: {
                 'circle-color': [
-                    'case',
-                    ['==', ['get', 'status'], 'resolved'], '#22c55e66',
-                    ['match', ['get', 'type'],
-                        'pothole', '#ef444466',
-                        'water_logging', '#3b82f666',
-                        'garbage_dump', '#fbbf2466',
-                        '#22d3ee66',
-                    ],
+                    'match', ['get', 'type'],
+                    'pothole', '#ef4444',
+                    'water_logging', '#3b82f6',
+                    'garbage_dump', '#eab308',
+                    '#ef4444' // Default to red
                 ],
                 'circle-radius': ['interpolate', ['linear'], ['zoom'],
                     12, 10,
@@ -97,7 +95,12 @@ export const IssuesLayer: React.FC<IssuesLayerProps> = ({
                     18, 24,
                     20, 30,
                 ],
-                'circle-opacity': 0.3,
+                'circle-opacity': [
+                    'match', ['get', 'status'],
+                    'active', 0.3,
+                    'pending', 0.2, // Proportional decrease for glow
+                    0.3
+                ],
                 'circle-blur': 1,
             },
         });
@@ -110,14 +113,11 @@ export const IssuesLayer: React.FC<IssuesLayerProps> = ({
             minzoom: 12,
             paint: {
                 'circle-color': [
-                    'case',
-                    ['==', ['get', 'status'], 'resolved'], '#22c55e',
-                    ['match', ['get', 'type'],
-                        'pothole', '#ef4444',
-                        'water_logging', '#3b82f6',
-                        'garbage_dump', '#fbbf24',
-                        '#22d3ee',
-                    ],
+                    'match', ['get', 'type'],
+                    'pothole', '#ef4444',
+                    'water_logging', '#3b82f6',
+                    'garbage_dump', '#eab308',
+                    '#ef4444' // Default to red
                 ],
                 'circle-radius': ['interpolate', ['linear'], ['zoom'],
                     12, 4,
@@ -128,7 +128,12 @@ export const IssuesLayer: React.FC<IssuesLayerProps> = ({
                 ],
                 'circle-stroke-width': 1.5,
                 'circle-stroke-color': '#ffffff',
-                'circle-opacity': ['case', ['==', ['get', 'status'], 'resolved'], 0.5, 1],
+                'circle-opacity': [
+                    'match', ['get', 'status'],
+                    'active', 1.0,
+                    'pending', 0.7,
+                    1.0
+                ],
             },
         });
 
@@ -140,7 +145,7 @@ export const IssuesLayer: React.FC<IssuesLayerProps> = ({
             minzoom: 12,
             paint: {
                 'circle-color': '#000000',
-                'circle-radius': 40,
+                'circle-radius': 25,
                 'circle-opacity': 0,
             },
         });
@@ -149,8 +154,9 @@ export const IssuesLayer: React.FC<IssuesLayerProps> = ({
 
         // Individual marker click → select
         const unclusteredClickHandler = (e: maplibregl.MapMouseEvent) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: [UNCLUSTERED_ID] });
+            const features = map.queryRenderedFeatures(e.point, { layers: [UNCLUSTERED_HIT_ID] });
             if (!features.length) return;
+            
             const props = features[0].properties!;
             const issue = geoJSONToIssue(props);
             if (onSelectRef.current) {

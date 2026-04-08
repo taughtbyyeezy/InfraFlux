@@ -59,6 +59,10 @@ export const VoteButtons: React.FC<VoteButtonsProps> = ({
         );
     }
 
+    const isPending = issue.status === 'pending';
+    const leftLabel = isPending ? 'FAKE' : 'ACTIVE';
+    const rightLabel = 'FIXED';
+
     return (
         <div className="vote-pill-container">
             <div className="vote-pill">
@@ -80,7 +84,7 @@ export const VoteButtons: React.FC<VoteButtonsProps> = ({
                     ) : (
                         <XCircle size={18} />
                     )}
-                    <span>ACTIVE</span>
+                    <span>{leftLabel}</span>
                 </button>
                 <div className="vote-pill-separator"></div>
                 <button
@@ -101,7 +105,7 @@ export const VoteButtons: React.FC<VoteButtonsProps> = ({
                     ) : (
                         <CheckCircle size={18} />
                     )}
-                    <span>FIXED</span>
+                    <span>{rightLabel}</span>
                 </button>
             </div>
 

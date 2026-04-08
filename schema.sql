@@ -5,7 +5,10 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS postgis;
 
--- 2. Issues Table
+-- 2. Issue Status ENUM
+CREATE TYPE issue_status AS ENUM ('active', 'in_progress', 'resolved', 'pending');
+
+-- 3. Issues Table
 CREATE TABLE IF NOT EXISTS issues (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     type VARCHAR(50) NOT NULL,
@@ -21,7 +24,12 @@ CREATE TABLE IF NOT EXISTS issues (
     reported_mla_party VARCHAR(50),
     reported_ac_name VARCHAR(100),
     reported_st_name VARCHAR(100),
-    reported_dist_name VARCHAR(100)
+    reported_dist_name VARCHAR(100),
+    status issue_status DEFAULT 'active',
+    resolution_image_url TEXT,
+    resolution_upvotes INTEGER DEFAULT 0,
+    resolution_downvotes INTEGER DEFAULT 0,
+    op_token VARCHAR(255)
 );
 
 -- 3. Issue Updates Table (History/Status)

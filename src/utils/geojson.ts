@@ -41,6 +41,10 @@ export const issuesToGeoJSON = (issues: InfrastructureIssue[]): GeoJSON.FeatureC
             ac_name: issue.ac_name || '',
             st_name: issue.st_name || '',
             dist_name: issue.dist_name || '',
+            // Resolution data
+            resolution_image_url: issue.resolution_image_url || '',
+            resolution_upvotes: issue.resolution_upvotes || 0,
+            resolution_downvotes: issue.resolution_downvotes || 0,
         }
     }))
 });
@@ -75,6 +79,9 @@ export const geoJSONToIssue = (props: Record<string, any>): InfrastructureIssue 
     ac_name: props.ac_name,
     st_name: props.st_name,
     dist_name: props.dist_name,
+    resolution_image_url: props.resolution_image_url,
+    resolution_upvotes: props.resolution_upvotes,
+    resolution_downvotes: props.resolution_downvotes,
     // Reconstruct location from stored lat/lng
     location: [props.loc_lat, props.loc_lng],
 });

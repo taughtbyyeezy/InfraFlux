@@ -9,6 +9,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { query } from './db.js';
+import pool from './db.js';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 
@@ -35,7 +36,8 @@ const IssueReportSchema = z.object({
     imageUrl: z.string().url().or(z.literal('')).optional(),
     magnitude: z.number().int().min(1).max(10).optional(),
     honeypot: z.string().max(0).optional(), // Must be empty
-    userLocation: z.tuple([z.number(), z.number()]).optional() // Real GPS location
+    userLocation: z.tuple([z.number(), z.number()]).optional(), // Real GPS location
+    opToken: z.string().optional() // Secure anonymous identifier for OP
 });
 
 const LookupMLASchema = z.object({
@@ -50,6 +52,15 @@ const VoteSchema = z.object({
 
 const ResolveVoteSchema = z.object({
     voterId: z.string().uuid()
+});
+
+const ResolutionVoteSchema = z.object({
+    vote: z.enum(['up', 'down'])
+});
+
+const ResolutionSubmissionSchema = z.object({
+    opToken: z.string().optional(),
+    imageUrl: z.string().url()
 });
 
 // Admin Auth Middleware
@@ -92,6 +103,9 @@ interface IssueRow {
     current_ac_name?: string;
     current_st_name?: string;
     current_dist_name?: string;
+    resolution_image_url?: string;
+    resolution_upvotes: number;
+    resolution_downvotes: number;
 }
 
 // Haversine formula to calculate distance in km
@@ -173,7 +187,10 @@ router.get('/map-state', async (req: Request, res: Response) => {
         i.votes_false,
         i.resolve_votes,
         i.magnitude,
-        u.status,
+        i.status, -- Use denormalized status from issues table
+        i.resolution_image_url,
+        i.resolution_upvotes,
+        i.resolution_downvotes,
         u.timestamp as updated_at,
         u.note,
         i.reported_mla_name,
@@ -188,7 +205,6 @@ router.get('/map-state', async (req: Request, res: Response) => {
         ac.dist_name as current_dist_name,
         COALESCE(json_agg(distinct m.image_url) FILTER (WHERE m.image_url IS NOT NULL), '[]') as images
       FROM issues i
-      ${hasValidBounds ? 'WHERE ST_Intersects(i.geom, ST_MakeEnvelope($2, $3, $4, $5, 4326))' : ''}
       JOIN LATERAL (
         SELECT * FROM issue_updates
         WHERE issue_id = i.id AND timestamp <= $1
@@ -197,9 +213,10 @@ router.get('/map-state', async (req: Request, res: Response) => {
       ) u ON true
       LEFT JOIN media m ON m.update_id = u.id
       LEFT JOIN mla_data ac ON ST_Contains(ac.geom, i.geom::geometry)
-      GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, u.id, u.status, u.timestamp, u.note, i.reported_mla_name, i.reported_mla_party, i.reported_ac_name, i.reported_st_name, i.reported_dist_name, ac.id
+      ${hasValidBounds ? 'WHERE ST_Intersects(i.geom, ST_MakeEnvelope($2, $3, $4, $5, 4326))' : ''}
+      GROUP BY i.id, i.type, i.geom, i.reported_by, i.created_at, i.approved, i.votes_true, i.votes_false, i.resolve_votes, i.magnitude, i.status, i.resolution_image_url, i.resolution_upvotes, i.resolution_downvotes, u.id, u.status, u.timestamp, u.note, i.reported_mla_name, i.reported_mla_party, i.reported_ac_name, i.reported_st_name, i.reported_dist_name, ac.id
       ORDER BY i.created_at DESC
-      ${hasValidBounds ? '' : 'LIMIT 100'};
+      ${hasValidBounds ? '' : 'LIMIT 5000'};
     `;
 
         const params = hasValidBounds 
@@ -252,7 +269,7 @@ router.post('/report', reportSubmissionLimiter, async (req: Request, res: Respon
         return res.status(400).json({ error: 'Invalid report data', details: validation.error.format() });
     }
 
-    const { type, location, reportedBy, status, note: rawNote, imageUrl, magnitude, honeypot, userLocation } = validation.data;
+    const { type, location, reportedBy, status, note: rawNote, imageUrl, magnitude, honeypot, userLocation, opToken } = validation.data;
     const note = rawNote ? sanitizeHTML(rawNote) : undefined;
 
     // 1. User-Agent Mobile Verification for Incentive Program
@@ -306,10 +323,10 @@ router.post('/report', reportSubmissionLimiter, async (req: Request, res: Respon
 
         // 1. Insert Issue with 1 initial vote from creator
         const issueResult = await query(
-            `INSERT INTO issues (type, geom, reported_by, magnitude, votes_true, reported_mla_name, reported_mla_party, reported_ac_name, reported_st_name, reported_dist_name) 
-             VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, $7, $8, $9, $10, $11) 
+            `INSERT INTO issues (type, geom, reported_by, magnitude, votes_true, reported_mla_name, reported_mla_party, reported_ac_name, reported_st_name, reported_dist_name, op_token, status) 
+             VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
              RETURNING id`,
-            [type, lng, lat, reportedBy, magnitude || 5, 1, reportedMLA.mla_name, reportedMLA.party, reportedMLA.ac_name, reportedMLA.st_name, reportedMLA.dist_name]
+            [type, lng, lat, reportedBy, magnitude || 5, 1, reportedMLA.mla_name, reportedMLA.party, reportedMLA.ac_name, reportedMLA.st_name, reportedMLA.dist_name, opToken || null, status || 'active']
         );
         const issueId = issueResult.rows[0].id;
 
@@ -487,6 +504,127 @@ router.post('/issue/:id/resolve-vote', async (req: Request, res: Response) => {
         await query('ROLLBACK');
         console.error(err);
         res.status(500).json({ error: 'Failed to record resolve vote' });
+    }
+});
+
+// POST /api/issues/:id/resolve
+router.post('/issues/:id/resolve', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const validation = ResolutionSubmissionSchema.safeParse(req.body);
+
+    if (!validation.success) {
+        return res.status(400).json({ error: 'Invalid resolution data', details: validation.error.format() });
+    }
+
+    const { opToken, imageUrl } = validation.data;
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const issueResult = await client.query('SELECT status, op_token FROM issues WHERE id = $1', [id]);
+
+        if (issueResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Issue not found' });
+        }
+
+        const issue = issueResult.rows[0];
+
+        if (issue.status === 'pending' || issue.status === 'resolved') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: `Cannot resolve an issue that is already ${issue.status}` });
+        }
+
+        // OP Fast-Track
+        if (opToken && issue.op_token && opToken === issue.op_token) {
+            await client.query(
+                'UPDATE issues SET status = $1, resolution_image_url = $2 WHERE id = $3',
+                ['resolved', imageUrl, id]
+            );
+
+            await client.query(
+                'INSERT INTO issue_updates (issue_id, status, note) VALUES ($1, $2, $3)',
+                [id, 'resolved', 'Issue resolved via OP Fast-Track proof']
+            );
+
+            await client.query('COMMIT');
+            return res.json({ message: 'Issue resolved via OP Fast-Track', status: 'resolved' });
+        }
+
+        // Standard Claim
+        await client.query(
+            'UPDATE issues SET status = $1, resolution_image_url = $2 WHERE id = $3',
+            ['pending', imageUrl, id]
+        );
+
+        await client.query(
+            'INSERT INTO issue_updates (issue_id, status, note) VALUES ($1, $2, $3)',
+            [id, 'pending', 'Resolution submitted - awaiting community verification']
+        );
+
+        await client.query('COMMIT');
+        return res.json({ message: 'Resolution submitted. Awaiting community verification.', status: 'pending' });
+    } catch (err: any) {
+        await client.query('ROLLBACK');
+        console.error('🔥 FATAL DB ERROR IN RESOLVE ROUTE:', err);
+        return res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// POST /api/issues/:id/vote-resolution
+router.post('/issues/:id/vote-resolution', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const validation = ResolutionVoteSchema.safeParse(req.body);
+
+    if (!validation.success) {
+        return res.status(400).json({ error: 'Invalid vote data', details: validation.error.format() });
+    }
+
+    const { vote } = validation.data;
+
+    try {
+        await query('BEGIN');
+
+        // 1. Update vote count
+        const column = vote === 'up' ? 'resolution_upvotes' : 'resolution_downvotes';
+        const updateResult = await query(
+            `UPDATE issues SET ${column} = ${column} + 1 WHERE id = $1 RETURNING resolution_upvotes, resolution_downvotes, status`,
+            [id]
+        );
+
+        if (updateResult.rows.length === 0) {
+            await query('ROLLBACK');
+            return res.status(404).json({ error: 'Issue not found' });
+        }
+
+        const { resolution_upvotes, resolution_downvotes, status } = updateResult.rows[0];
+        const netVotes = resolution_upvotes - resolution_downvotes;
+
+        // 2. Tribunal Logic
+        if (status === 'pending') {
+            if (netVotes >= 3) {
+                // Resolve
+                await query('UPDATE issues SET status = $1 WHERE id = $2', ['resolved', id]);
+                await query('INSERT INTO issue_updates (issue_id, status, note) VALUES ($1, $2, $3)', [id, 'resolved', 'Issue resolved via community consensus']);
+            } else if (netVotes <= -2) {
+                // Revert to active
+                await query(
+                    'UPDATE issues SET status = $1, resolution_image_url = NULL, resolution_upvotes = 0, resolution_downvotes = 0 WHERE id = $2',
+                    ['active', id]
+                );
+                await query('INSERT INTO issue_updates (issue_id, status, note) VALUES ($1, $2, $3)', [id, 'active', 'Resolution rejected via community consensus - reverted to active']);
+            }
+        }
+
+        await query('COMMIT');
+        res.json({ message: 'Vote recorded', upvotes: resolution_upvotes, downvotes: resolution_downvotes });
+    } catch (error) {
+        await query('ROLLBACK');
+        console.error('Error voting on resolution:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

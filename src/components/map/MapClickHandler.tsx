@@ -14,6 +14,15 @@ export const MapClickHandler: React.FC<MapClickHandlerProps> = ({ onMapClick, ad
 
         const clickHandler = (e: any) => {
             // e.lngLat has {lng, lat}; e.point has {x, y}
+            
+            // PROXIMITY GUARD: Reject map clicks that are too close to existing markers
+            // We check if the 'hit area' layer was touched
+            const hitFeatures = map.queryRenderedFeatures(e.point, { layers: ['issues-unclustered-hit'] });
+            if (hitFeatures && hitFeatures.length > 0) {
+                console.log('Map click ignored - within proximity touch guard of marker');
+                return;
+            }
+
             onMapClick([e.lngLat.lat, e.lngLat.lng], { x: e.point.x, y: e.point.y });
         };
 

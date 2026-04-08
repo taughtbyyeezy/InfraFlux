@@ -5,6 +5,8 @@ import { InfrastructureIssue, IssueType } from '../types';
 import { Navigation, PlusCircle, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getVoterId } from '../utils/voterId';
+import { getOpToken } from '../utils/opToken';
+import { calculateDistance, getGeoErrorMessage } from '../utils/geo';
 import { useToast } from '../contexts/ToastContext';
 import { MapLoadingOverlay, Spinner } from '../components/Skeleton';
 import { hapticButton, hapticSuccess } from '../utils/haptic';
@@ -28,7 +30,6 @@ import { DonateModal } from '../components/ui/DonateModal';
 import { DesktopBlock } from '../components/ui/DesktopBlock';
 
 
-const sector18Center: [number, number] = [28.1711, 76.6211];
 
 interface UserMapProps {
     isAdmin?: boolean;
@@ -137,62 +138,33 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const [hasInitialCentered, setHasInitialCentered] = useState(false);
 
-    // Fetch map data
-    const fetchMapState = async (time: Date, bounds?: { minLng: number; minLat: number; maxLng: number; maxLat: number }) => {
-        // Only show global loading overlay on initial mount (when issues are empty)
+    // Fetch map data — Initial Global Fetch
+    const fetchMapState = async (time: Date) => {
+        // Only show global loading overlay on initial mount
         const isInitialLoad = issues.length === 0;
         if (isInitialLoad) setIsLoading(true);
 
-        const minDelay = new Promise(resolve => setTimeout(resolve, 1000));
         try {
-            const fetchPromise = (async () => {
-                let url = `${baseUrl}/api/map-state?timestamp=${time.toISOString()}`;
-                if (bounds) {
-                    url += `&minLng=${bounds.minLng}&minLat=${bounds.minLat}&maxLng=${bounds.maxLng}&maxLat=${bounds.maxLat}`;
-                }
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })();
-
-            const [data] = await Promise.all([fetchPromise as Promise<any>, minDelay]);
+            const url = `${baseUrl}/api/map-state?timestamp=${time.toISOString()}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
             setIssues(Array.isArray(data.issues) ? data.issues : []);
-
-            // IP-based centering removed to prioritize Rewari default
         } catch (error) {
             console.error('Failed to fetch map state:', error);
-            // Only show toasts for initial load or explicitly triggered loads.
-            // Silence background spatial pagination errors to prevent UI spam.
             if (isInitialLoad) {
                 addToast('Failed to fetch map data', 'error');
             }
-            await minDelay;
         } finally {
             if (isInitialLoad) setIsLoading(false);
         }
     };
 
-    // Re-added initial fetch to resolve loading deadlock
+    // Initial Fetch on Mount
     useEffect(() => {
         fetchMapState(currentTime);
-    }, [currentTime]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const getGeoErrorMessage = (error: GeolocationPositionError) => {
-        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-        switch (error.code) {
-            case error.PERMISSION_DENIED:
-                return isSafari
-                    ? "Permission denied. On Safari, you may also need to allow Location in System Settings > Privacy > Location Services."
-                    : "Permission denied. Please enable location services in your browser/system settings.";
-            case error.POSITION_UNAVAILABLE:
-                return "Position unavailable. Your device could not determine your location.";
-            case error.TIMEOUT:
-                return "Request timed out. Try again or check your signal.";
-            default:
-                return error.message || "An unknown error occurred.";
-        }
-    };
 
     // Effect to lookup MLA when report location changes
     useEffect(() => {
@@ -251,18 +223,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
             const [uLat, uLng] = userLocation;
             const [mLat, mLng] = reportForm.location;
 
-            // Haversine distance calculation (simple approximation)
-            const R = 6371e3; // metres
-            const φ1 = uLat * Math.PI / 180;
-            const φ2 = mLat * Math.PI / 180;
-            const Δφ = (mLat - uLat) * Math.PI / 180;
-            const Δλ = (mLng - uLng) * Math.PI / 180;
-
-            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const distance = R * c; // in metres
+            const distance = calculateDistance(uLat, uLng, mLat, mLng);
 
             if (distance > 100) { // 100 meters threshold
                 addToast('Report marker is too far from your actual location. Please report on-site.', 'error');
@@ -342,6 +303,7 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                     note: reportForm.note,
                     location: reportForm.location,
                     reportedBy: getVoterId(),
+                    opToken: getOpToken(), // Include secure OP token
                     magnitude: reportForm.magnitude,
                     imageUrl: finalImageUrl,
                     ...(reportForm.honeypot ? { honeypot: reportForm.honeypot } : {}),
@@ -384,46 +346,74 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
 
     const handleVote = async (id: string, voteType: 'true' | 'false') => {
         const issue = issues.find(i => i.id === id);
-        const targetId = issue?.id || id;
+        if (!issue) return;
+
+        const targetId = issue.id || id;
 
         setVotingIssueId(id);
         setVotingType(voteType);
 
+        const isPending = issue.status === 'pending';
+        const endpoint = isPending 
+            ? `${baseUrl}/api/issues/${id}/vote-resolution` 
+            : `${baseUrl}/api/issue/${id}/vote`;
+        
+        // For pending: 'false' (Right/Fixed) is 'up', 'true' (Left/Fake) is 'down'
+        const payload = isPending 
+            ? { vote: voteType === 'false' ? 'up' : 'down' }
+            : { vote: voteType, voterId: getVoterId() };
+
         try {
-            const response = await fetch(`${baseUrl}/api/issue/${targetId}/vote`, {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vote: voteType, voterId: getVoterId() })
+                body: JSON.stringify(payload)
             });
+
             if (response.ok) {
                 const data = await response.json();
-                if (data.delisted) {
-                    setSelectedIssue(null);
-                    addToast('Issue has been delisted due to negative votes', 'info');
+                hapticSuccess();
+                
+                if (isPending) {
+                    addToast('Verification vote recorded', 'success');
+                    // Synchronize state with tribunal results
+                    setIssues(prev => prev.map(iss => 
+                        iss.id === id ? { 
+                            ...iss, 
+                            resolution_upvotes: data.resolution_upvotes,
+                            resolution_downvotes: data.resolution_downvotes,
+                            status: data.status 
+                        } : iss
+                    ));
+                    if (selectedIssue && selectedIssue.id === id) {
+                        setSelectedIssue({
+                            ...selectedIssue,
+                            resolution_upvotes: data.resolution_upvotes,
+                            resolution_downvotes: data.resolution_downvotes,
+                            status: data.status
+                        });
+                    }
                 } else {
-                    const voteLabel = voteType === 'true' ? 'active' : 'fixed';
-                    hapticSuccess();
-                    addToast(`Vote recorded: Marked as ${voteLabel}`, 'success');
-                }
-                fetchMapState(currentTime);
-                if (selectedIssue && selectedIssue.id === id) {
-                    setSelectedIssue({
-                        ...selectedIssue,
-                        votes_true: data.votes_true,
-                        votes_false: data.votes_false
-                    });
+                    if (data.delisted) {
+                        setSelectedIssue(null);
+                        addToast('Issue delisted after community consensus.', 'info');
+                    } else {
+                        const voteLabel = voteType === 'true' ? 'active' : 'fixed';
+                        addToast(`Marked as ${voteLabel}`, 'success');
+                    }
+                    fetchMapState(currentTime);
                 }
             } else {
                 const data = await response.json().catch(() => ({}));
                 if (response.status === 409) {
-                    addToast('You have already voted on this issue', 'warning');
+                    addToast('Already voted on this item', 'warning');
                 } else {
-                    addToast(`Failed to record vote: ${data.error || 'Server error'}`, 'error');
+                    addToast(data.error || 'Vote failed', 'error');
                 }
             }
         } catch (error) {
-            console.error('Failed to vote:', error);
-            addToast('A network error occurred while voting.', 'error');
+            console.error('Voting error:', error);
+            addToast('Network error during vote submittal.', 'error');
         } finally {
             setVotingIssueId(null);
             setVotingType(null);
@@ -624,35 +614,6 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                 duration: 200,
                 essential: true
             });
-        }
-
-        // Spatial Pagination: Debounced fetch for issues within the new viewport
-        if (map) {
-            if (scrollDelayRef.current) clearTimeout(scrollDelayRef.current);
-            
-            scrollDelayRef.current = setTimeout(() => {
-                const bounds = map.getBounds();
-                
-                // Extract and sanitize coordinates
-                const minLng = bounds.getWest();
-                const minLat = bounds.getSouth();
-                const maxLng = bounds.getEast();
-                const maxLat = bounds.getNorth();
-
-                // Validation & Clamping
-                const isInvalid = isNaN(minLng) || isNaN(minLat) || isNaN(maxLng) || isNaN(maxLat);
-                if (isInvalid) return;
-
-                // Clamp to Earth constraints to avoid PostGIS wrap-around crashes
-                const safeBounds = {
-                    minLng: Math.max(-180, Math.min(180, minLng)),
-                    minLat: Math.max(-90, Math.min(90, minLat)),
-                    maxLng: Math.max(-180, Math.min(180, maxLng)),
-                    maxLat: Math.max(-90, Math.min(90, maxLat))
-                };
-
-                fetchMapState(currentTime, safeBounds);
-            }, 350); // 350ms debounce
         }
     };
 
@@ -1014,8 +975,20 @@ const UserMap: React.FC<UserMapProps> = ({ isAdmin = false }) => {
                                                 String(selectedIssue.type || 'Issue').replace(/_/g, ' ')}
                                 </h2>
                                 <div className="mobile-confidence-badge">
-                                    {calculateConfidence(selectedIssue.votes_true, selectedIssue.votes_false, selectedIssue.approved)}%
-                                    <span className="confidence-text">Confidence</span>
+                                    {selectedIssue.status === 'pending'
+                                        ? calculateConfidence(
+                                            selectedIssue.resolution_upvotes || 0,
+                                            selectedIssue.resolution_downvotes || 0,
+                                            false
+                                        )
+                                        : calculateConfidence(
+                                            selectedIssue.votes_true,
+                                            selectedIssue.votes_false,
+                                            selectedIssue.approved
+                                        )}%
+                                    <span className="confidence-text">
+                                        {selectedIssue.status === 'pending' ? 'Verification' : 'Confidence'}
+                                    </span>
                                 </div>
                             </div>
 
